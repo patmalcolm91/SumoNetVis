@@ -10,6 +10,26 @@ import matplotlib.patches
 import matplotlib.pyplot as plt
 
 DEFAULT_LANE_WIDTH = 3.2
+US_MARKINGS = False  # if True, US-style lane markings will be drawn
+
+
+class Edge:
+    def __init__(self, attrib):
+        self.id = attrib["id"]
+        self.function = attrib["function"] if "function" in attrib else ""
+        self.lanes = []
+
+    def append_lane(self, lane):
+        self.lanes.append(lane)
+        lane.parentEdge = self
+
+    def lane_count(self):
+        return len(self.lanes)
+
+    def plot(self, ax):
+        for lane in self.lanes:
+            lane.plot_shape(ax)
+            lane.plot_lane_markings(ax)
 
 
 class Lane:
@@ -30,24 +50,74 @@ class Lane:
         coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
         self.alignment = LineString(coords)
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
+        self.color = self.lane_color()
+        self.parentEdge = None
+
+    def lane_color(self):
+        if self.allow == "pedestrian":
+            return "#808080"
+        if self.allow == "bicycle":
+            return "#C0422C"
+        if self.allow == "ship":
+            return "#96C8C8"
+        if self.allow == "authority":
+            return "#FF0000"
+        if self.disallow == "all":
+            return "#FFFFFF"
+        if "passenger" in self.disallow or "passenger" not in self.allow:
+            return "#5C5C5C"
+        else:
+            return "#000000"
 
     def plot_alignment(self, ax):
         x, y = zip(*self.alignment.coords)
         ax.plot(x, y)
 
     def plot_shape(self, ax):
-        poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color="green")
+        poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=self.color)
         ax.add_patch(poly)
+
+    def inverse_lane_index(self):
+        return self.parentEdge.lane_count() - self.index - 1
+
+    def plot_lane_markings(self, ax):
+        """
+        Guesses and plots some simple lane markings. TODO: use fill_between to plot thickness in data coordinates
+        :param ax:
+        :return:
+        """
+        if "passenger" in self.allow or "passenger" not in self.disallow and self.parentEdge.function != "internal":
+            if self.inverse_lane_index() == 0:
+                fmt = "y-" if US_MARKINGS is True else "w-"
+            else:
+                fmt = "w--"
+            leftEdge = self.alignment.parallel_offset(self.width/2, side="left")
+            try:
+                x, y = zip(*leftEdge.coords)
+                ax.plot(x, y, fmt)
+            except NotImplementedError:
+                print("Can't print center stripe for lane " + self.id)
+
+
+class Net:
+    def __init__(self, file):
+        self.edges = []
+        net = ET.parse(file).getroot()
+        for obj in net:
+            if obj.tag == "edge":
+                edge = Edge(obj.attrib)
+                for laneObj in obj:
+                    lane = Lane(laneObj.attrib)
+                    edge.append_lane(lane)
+                self.edges.append(edge)
+
+    def plot(self, ax):
+        for edge in self.edges:
+            edge.plot(ax)
 
 
 if __name__ == "__main__":
-    netFile = ET.parse('../MT_Course.net.xml')
-    net = netFile.getroot()
+    net = Net('../MT_Course.net.xml')
     fig, ax = plt.subplots()
-    for obj in net:
-        if obj.tag == "edge":
-            for lane in obj:
-                ln = Lane(lane.attrib)
-                ln.plot_alignment(ax)
-                ln.plot_shape(ax)
+    net.plot(ax)
     plt.show()
