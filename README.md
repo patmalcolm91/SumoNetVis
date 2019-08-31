@@ -19,6 +19,10 @@ except Exception:
     import SumoNetVis
 ```
 
+### Dependencies
+* shapely
+* matplotlib
+
 ## Usage
 To plot a Sumo net file, you can use the following code:
 
