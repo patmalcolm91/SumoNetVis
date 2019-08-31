@@ -5,3 +5,5 @@ Author: Patrick Malcolm
 """
 
 __all__ = ["Net"]
+
+from .Net import *
