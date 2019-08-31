@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 DEFAULT_LANE_WIDTH = 3.2
 
+
 class Lane:
     def __init__(self, attrib):
         """
@@ -50,4 +51,3 @@ if __name__ == "__main__":
                 ln.plot_alignment(ax)
                 ln.plot_shape(ax)
     plt.show()
-
