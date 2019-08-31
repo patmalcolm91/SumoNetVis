@@ -99,9 +99,25 @@ class Lane:
                 print("Can't print center stripe for lane " + self.id)
 
 
+class Junction:
+    def __init__(self, attrib):
+        self.id = attrib["id"]
+        self.shape = None
+        if "shape" in attrib:
+            coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
+            if len(coords) > 2:
+                self.shape = Polygon(coords)
+
+    def plot(self, ax):
+        if self.shape is not None:
+            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color="#660000")
+            ax.add_patch(poly)
+
+
 class Net:
     def __init__(self, file):
         self.edges = []
+        self.junctions = []
         net = ET.parse(file).getroot()
         for obj in net:
             if obj.tag == "edge":
@@ -110,10 +126,15 @@ class Net:
                     lane = Lane(laneObj.attrib)
                     edge.append_lane(lane)
                 self.edges.append(edge)
+            elif obj.tag == "junction":
+                junction = Junction(obj.attrib)
+                self.junctions.append(junction)
 
     def plot(self, ax):
         for edge in self.edges:
             edge.plot(ax)
+        for junction in self.junctions:
+            junction.plot(ax)
 
 
 if __name__ == "__main__":
