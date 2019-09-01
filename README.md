@@ -31,11 +31,11 @@ To plot a Sumo net file and trajectories, you can use the following code:
 import SumoNetVis
 import matplotlib.pyplot as plt
 # Plot Sumo Network
-net = Net("path/to/yourfile.net.xml")
+net = SumoNetVis.Net("path/to/yourfile.net.xml")
 fig, ax = plt.subplots()
 net.plot(ax)
 # Plot trajectories
-trajectories = Trajectories("path/to/fcd-output.xml")
+trajectories = SumoNetVis.Trajectories("path/to/fcd-output.xml")
 trajectories["vehicle_id"].assign_colors_speed()
 trajectories["vehicle_id"].plot(ax)
 # Show figure
