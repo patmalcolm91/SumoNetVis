@@ -48,8 +48,30 @@ class Trajectory:
         """
         self.colors = [color for i in self.x]
 
-    def assign_colors_speed(self, cmap, min_speed, max_speed):
-        raise NotImplementedError("Function not yet implemented")
+    def assign_colors_speed(self, cmap=None, min_speed=0, max_speed=None):
+        """
+        Assigns colors to trajectory points based on the speed.
+        :param cmap: cmap object or name of cmap to use
+        :param min_speed: speed corresponding to low end of the color scale. If None, trajectory's min value is used
+        :param max_speed: speed corresponding to high end of the color scale. If None, trajectory's max value is used
+        :return:None
+        :type min_speed: float
+        :type max_speed: float
+        """
+        if cmap is None:
+            cmap = plt.cm.get_cmap("viridis")
+        elif type(cmap) == str:
+            cmap = plt.cm.get_cmap(cmap)
+        cmapList = cmap.colors
+        if min_speed is None:
+            min_speed = min(self.speed)
+        if max_speed is None:
+            max_speed = max(self.speed)
+        for i in range(len(self.x)):
+            index = len(cmapList) * (self.speed[i] - min_speed) / (max_speed - min_speed)
+            index = int(round(max(0, min(index, len(cmapList)-1))))
+            color = cmapList[index]
+            self.colors[i] = color
 
     def assign_colors_angle(self, cmap):
         raise NotImplementedError("Function not yet implemented")
@@ -175,6 +197,6 @@ class Trajectories:
 if __name__ == "__main__":
     trajectories = Trajectories("../2019-08-30-17-01-38fcd-output.xml")
     fig, ax = plt.subplots()
-    trajectories["TESIS_0"].assign_colors_lane()
+    trajectories["TESIS_0"].assign_colors_speed()
     trajectories["TESIS_0"].plot(ax, lw=3)
     plt.show()
