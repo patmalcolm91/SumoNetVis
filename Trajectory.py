@@ -6,10 +6,13 @@ Author: Patrick Malcolm
 
 import xml.etree.ElementTree as ET
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 class Trajectory:
-    def __init__(self, id, x=[], y=[], speed=[], angle=[], edge=[], colors=[]):
+    def __init__(self, id, time=[], x=[], y=[], speed=[], angle=[], edge=[], colors=[]):
+        self.id = id
+        self.time = time
         self.x = x
         self.y = y
         self.speed = speed
@@ -17,7 +20,8 @@ class Trajectory:
         self.edge = edge
         self.colors = colors
 
-    def append_point(self, x=None, y=None, speed=None, angle=None, edge=None, color=None):
+    def append_point(self, time, x, y, speed=None, angle=None, edge=None, color=None):
+        self.time.append(time)
         self.x.append(x)
         self.y.append(y)
         self.speed.append(speed)
@@ -37,8 +41,12 @@ class Trajectory:
     def assign_colors_edge(self, cmap):
         raise NotImplementedError("Function not yet implemented")
 
-    def plot(self, ax):
+    def plot(self, ax, start_time=0, end_time=np.inf):
         if len(self.x) < 2:
             return
         for i in range(len(self.x)-2):
+            if self.time[i] < start_time:
+                continue
+            if self.time[i+1] > end_time:
+                break
             ax.plot(self.x[i:i+2], self.y[i:i+2], c=self.colors[i])
