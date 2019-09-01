@@ -75,12 +75,13 @@ class Trajectory:
         for i in range(len(self.x)):
             self.colors[i] = color_dict[self.lane[i]]
 
-    def plot(self, ax, start_time=0, end_time=np.inf):
+    def plot(self, ax, start_time=0, end_time=np.inf, **kwargs):
         """
         Plots the trajectory
         :param ax: matplotlib Axes object
         :param start_time: time at which to start drawing
         :param end_time: time at which to end drawing
+        :param kwargs: keyword arguments to pass to matplotlib.pyplot.plot()
         :type ax: plt.Axes
         :type start_time: float
         :type end_time: float
@@ -93,7 +94,7 @@ class Trajectory:
                 continue
             if self.time[i+1] > end_time:
                 break
-            ax.plot(self.x[i:i+2], self.y[i:i+2], c=self.colors[i])
+            ax.plot(self.x[i:i+2], self.y[i:i+2], c=self.colors[i], **kwargs)
 
 
 class Trajectories:
@@ -155,24 +156,25 @@ class Trajectories:
         for vehID in trajectories:
             self.append(trajectories[vehID])
 
-    def plot(self, ax, start_time=0, end_time=np.inf):
+    def plot(self, ax, start_time=0, end_time=np.inf, **kwargs):
         """
         Plots all of the trajectories contained in this object.
         :param ax: matplotlib Axes object
         :param start_time: time at which to start drawing
         :param end_time: time at which to stop drawing
+        :param kwargs: keyword arguments to pass to plot function
         :return: None
         :type ax: plt.Axes
         :type start_time: float
         :type end_time: float
         """
         for trajectory in self:
-            trajectory.plot(ax, start_time, end_time)
+            trajectory.plot(ax, start_time, end_time, **kwargs)
 
 
 if __name__ == "__main__":
     trajectories = Trajectories("../2019-08-30-17-01-38fcd-output.xml")
     fig, ax = plt.subplots()
     trajectories["TESIS_0"].assign_colors_lane()
-    trajectories["TESIS_0"].plot(ax)
+    trajectories["TESIS_0"].plot(ax, lw=3)
     plt.show()
