@@ -73,8 +73,24 @@ class Trajectory:
             color = cmapList[index]
             self.colors[i] = color
 
-    def assign_colors_angle(self, cmap):
-        raise NotImplementedError("Function not yet implemented")
+    def assign_colors_angle(self, cmap=None, angle_mode="deg"):
+        """
+        Assigns colors to trajectory points based on the angle.
+        :param cmap: cmap object or name of cmap to use
+        :param angle_mode: units of the angle value. "deg", "rad", or "grad"
+        :type angle_mode: str
+        :return: None
+        """
+        if cmap is None:
+            cmap = plt.cm.get_cmap("hsv")
+        elif type(cmap) == str:
+            cmap = plt.cm.get_cmap(cmap)
+        max_angles = {"deg": 360, "rad": 2*np.pi, "grad": 400}
+        max_angle = max_angles[angle_mode]
+        for i in range(len(self.x)):
+            angle = self.angle[i] % max_angle
+            color = cmap(angle/max_angle)
+            self.colors[i] = color
 
     def assign_colors_lane(self, cmap=None, color_dict=None):
         """
@@ -197,6 +213,6 @@ class Trajectories:
 if __name__ == "__main__":
     trajectories = Trajectories("../2019-08-30-17-01-38fcd-output.xml")
     fig, ax = plt.subplots()
-    trajectories["TESIS_0"].assign_colors_speed()
+    trajectories["TESIS_0"].assign_colors_angle()
     trajectories["TESIS_0"].plot(ax, lw=3)
     plt.show()
