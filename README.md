@@ -22,6 +22,7 @@ except Exception:
 ### Dependencies
 * shapely
 * matplotlib
+* numpy
 
 ## Usage
 To plot a Sumo net file, you can use the following code:
