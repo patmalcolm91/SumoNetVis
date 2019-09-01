@@ -15,18 +15,39 @@ US_MARKINGS = False  # if True, US-style lane markings will be drawn
 
 class Edge:
     def __init__(self, attrib):
+        """
+        Initializes an Edge object.
+        :param attrib: dict of Edge attributes
+        :type attrib: dict
+        """
         self.id = attrib["id"]
         self.function = attrib["function"] if "function" in attrib else ""
         self.lanes = []
 
     def append_lane(self, lane):
+        """
+        Makes the specified Lane a child of the Edge
+        :param lane: child Lane object
+        :return: None
+        :type lane: Lane
+        """
         self.lanes.append(lane)
         lane.parentEdge = self
 
     def lane_count(self):
+        """
+        Returns the number of lanes to which this Edge is a parent
+        :return: lane count
+        """
         return len(self.lanes)
 
     def plot(self, ax):
+        """
+        Plots the lane
+        :param ax: matplotlib Axes object
+        :return: None
+        :type ax: plt.Axes
+        """
         for lane in self.lanes:
             lane.plot_shape(ax)
             lane.plot_lane_markings(ax)
@@ -35,7 +56,7 @@ class Edge:
 class Lane:
     def __init__(self, attrib):
         """
-        Initialize a lane object
+        Initialize a Lane object.
         :param attrib: dict of all of the lane attributes
         :type attrib: dict
         """
@@ -54,6 +75,10 @@ class Lane:
         self.parentEdge = None
 
     def lane_color(self):
+        """
+        Returns the Sumo-GUI default lane color for this lane.
+        :return: lane color
+        """
         if self.allow == "pedestrian":
             return "#808080"
         if self.allow == "bicycle":
@@ -70,21 +95,38 @@ class Lane:
             return "#000000"
 
     def plot_alignment(self, ax):
+        """
+        Plots the centerline alignment of the lane
+        :param ax: matplotlib Axes object
+        :return: None
+        :type ax: plt.Axes
+        """
         x, y = zip(*self.alignment.coords)
         ax.plot(x, y)
 
     def plot_shape(self, ax):
+        """
+        Plots the entire shape of the lane
+        :param ax: matplotlib Axes object
+        :return: None
+        :type ax: plt.Axes
+        """
         poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=self.color)
         ax.add_patch(poly)
 
     def inverse_lane_index(self):
+        """
+        Returns the inverted lane index (i.e. counting from inside out)
+        :return: inverted lane index
+        """
         return self.parentEdge.lane_count() - self.index - 1
 
     def plot_lane_markings(self, ax):
         """
         Guesses and plots some simple lane markings. TODO: use fill_between to plot thickness in data coordinates
-        :param ax:
-        :return:
+        :param ax: matplotlib Axes object
+        :return: None
+        :type ax: plt.Axes
         """
         if "passenger" in self.allow or "passenger" not in self.disallow and self.parentEdge.function != "internal":
             if self.inverse_lane_index() == 0:
@@ -101,6 +143,11 @@ class Lane:
 
 class Junction:
     def __init__(self, attrib):
+        """
+        Initializes a Junction object.
+        :param attrib: dict of junction attributes.
+        :type attrib: dict
+        """
         self.id = attrib["id"]
         self.shape = None
         if "shape" in attrib:
@@ -109,6 +156,12 @@ class Junction:
                 self.shape = Polygon(coords)
 
     def plot(self, ax):
+        """
+        Plots the Junction.
+        :param ax: matplotlib Axes object
+        :return: None
+        :type ax: plt.Axes
+        """
         if self.shape is not None:
             poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color="#660000")
             ax.add_patch(poly)
@@ -116,6 +169,11 @@ class Junction:
 
 class Net:
     def __init__(self, file):
+        """
+        Initializes a Net object from a Sumo network file
+        :param file: path to Sumo network file
+        :type file: str
+        """
         self.edges = []
         self.junctions = []
         net = ET.parse(file).getroot()
@@ -131,6 +189,12 @@ class Net:
                 self.junctions.append(junction)
 
     def plot(self, ax):
+        """
+        Plots the Net.
+        :param ax: matplotlib Axes object
+        :return: None
+        :type ax: plt.Axes
+        """
         for edge in self.edges:
             edge.plot(ax)
         for junction in self.junctions:
