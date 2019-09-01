@@ -56,7 +56,7 @@ class Trajectory:
 
     def assign_colors_lane(self, cmap=None, color_dict=None):
         """
-
+        Assigns colors to the trajectory points based on the lane value
         :param cmap: cmap object or name of cmap to use to color lanes
         :param color_dict: dict to override random color selection. Keys are lane IDs, values are colors.
         :return: None
