@@ -54,8 +54,26 @@ class Trajectory:
     def assign_colors_angle(self, cmap):
         raise NotImplementedError("Function not yet implemented")
 
-    def assign_colors_edge(self, cmap):
-        raise NotImplementedError("Function not yet implemented")
+    def assign_colors_lane(self, cmap=None, color_dict=None):
+        """
+
+        :param cmap: cmap object or name of cmap to use to color lanes
+        :param color_dict: dict to override random color selection. Keys are lane IDs, values are colors.
+        :return: None
+        :type color_dict: dict
+        """
+        if cmap is None:
+            cmap = plt.cm.get_cmap("tab10")
+        elif type(cmap) == str:
+            cmap = plt.cm.get_cmap(cmap)
+        cmapList = cmap.colors
+        if color_dict is None:
+            color_dict = dict()
+            lane_list = set(self.lane)
+            for i, lane in enumerate(lane_list):
+                color_dict[lane] = cmapList[i % len(cmapList)]
+        for i in range(len(self.x)):
+            self.colors[i] = color_dict[self.lane[i]]
 
     def plot(self, ax, start_time=0, end_time=np.inf):
         """
@@ -155,5 +173,6 @@ class Trajectories:
 if __name__ == "__main__":
     trajectories = Trajectories("../2019-08-30-17-01-38fcd-output.xml")
     fig, ax = plt.subplots()
+    trajectories["TESIS_0"].assign_colors_lane()
     trajectories["TESIS_0"].plot(ax)
     plt.show()
