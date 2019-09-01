@@ -10,15 +10,15 @@ import numpy as np
 
 
 class Trajectory:
-    def __init__(self, id, time=[], x=[], y=[], speed=[], angle=[], edge=[], colors=[]):
+    def __init__(self, id, time=None, x=None, y=None, speed=None, angle=None, edge=None, colors=None):
         self.id = id
-        self.time = time
-        self.x = x
-        self.y = y
-        self.speed = speed
-        self.angle = angle
-        self.edge = edge
-        self.colors = colors
+        self.time = time if time is not None else []
+        self.x = x if x is not None else []
+        self.y = y if y is not None else []
+        self.speed = speed if speed is not None else []
+        self.angle = angle if angle is not None else []
+        self.edge = edge if edge is not None else []
+        self.colors = colors if colors is not None else []
 
     def append_point(self, time, x, y, speed=None, angle=None, edge=None, color=None):
         """
