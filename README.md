@@ -27,6 +27,8 @@ except Exception:
 To plot a Sumo net file, you can use the following code:
 
 ```python
+import SumoNetVis
+import matplotlib.pyplot as plt
 net = Net("path/to/yourfile.net.xml")
 fig, ax = plt.subplots()
 net.plot(ax)
