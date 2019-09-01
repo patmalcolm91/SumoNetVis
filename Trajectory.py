@@ -20,7 +20,7 @@ class Trajectory:
         self.lane = lane if lane is not None else []
         self.colors = colors if colors is not None else []
 
-    def append_point(self, time, x, y, speed=None, angle=None, lane=None, color=None):
+    def append_point(self, time, x, y, speed=None, angle=None, lane=None, color="#000000"):
         """
         Appends a point to the trajectory
         :type time: float
@@ -70,8 +70,6 @@ class Trajectory:
         """
         if len(self.x) < 2:
             return
-        if len(self.colors) != len(self.x):
-            self.assign_colors_constant("#000000")
         for i in range(len(self.x)-2):
             if self.time[i] < start_time:
                 continue
