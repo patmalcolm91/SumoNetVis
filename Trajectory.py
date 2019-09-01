@@ -21,6 +21,17 @@ class Trajectory:
         self.colors = colors
 
     def append_point(self, time, x, y, speed=None, angle=None, edge=None, color=None):
+        """
+        Appends a point to the trajectory
+        :type time: float
+        :type x: float
+        :type y: float
+        :type speed: float
+        :type angle: float
+        :type edge: str
+        :type color: str
+        :return: None
+        """
         self.time.append(time)
         self.x.append(x)
         self.y.append(y)
@@ -30,6 +41,11 @@ class Trajectory:
         self.colors.append(color)
 
     def assign_colors_constant(self, color):
+        """
+        Assigns a constant color to the trajectory
+        :param color: desired color
+        :return: None
+        """
         self.colors = [color for i in self.x]
 
     def assign_colors_speed(self, cmap, min_speed, max_speed):
@@ -42,6 +58,16 @@ class Trajectory:
         raise NotImplementedError("Function not yet implemented")
 
     def plot(self, ax, start_time=0, end_time=np.inf):
+        """
+        Plots the trajectory
+        :param ax: matplotlib Axes object
+        :param start_time: time at which to start drawing
+        :param end_time: time at which to end drawing
+        :type ax: plt.Axes
+        :type start_time: float
+        :type end_time: float
+        :return: None
+        """
         if len(self.x) < 2:
             return
         for i in range(len(self.x)-2):
