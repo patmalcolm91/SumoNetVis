@@ -25,15 +25,20 @@ except Exception:
 * numpy
 
 ## Usage
-To plot a Sumo net file, you can use the following code:
+To plot a Sumo net file and trajectories, you can use the following code:
 
 ```python
 import SumoNetVis
 import matplotlib.pyplot as plt
+# Plot Sumo Network
 net = Net("path/to/yourfile.net.xml")
 fig, ax = plt.subplots()
 net.plot(ax)
-# Insert code for overlay plots here
+# Plot trajectories
+trajectories = Trajectories("path/to/fcd-output.xml")
+trajectories["vehicle_id"].assign_colors_speed()
+trajectories["vehicle_id"].plot(ax)
+# Show figure
 plt.show()
 ```
 
