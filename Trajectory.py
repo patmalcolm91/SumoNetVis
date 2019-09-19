@@ -143,6 +143,9 @@ class Trajectories:
         :type file: str
         """
         self.trajectories = []  # type: list[Trajectory]
+        self.start = None
+        self.end = None
+        self.timestep = None
         if file is not None:
             if file.endswith("fcd-output.xml"):
                 self.read_from_fcd(file)
@@ -179,8 +182,13 @@ class Trajectories:
         root = ET.parse(file).getroot()
         trajectories = dict()
         for timestep in root:
+            time = float(timestep.attrib["time"])
+            if self.timestep is None and self.start is not None:
+                self.timestep = time - self.start
+            if self.start is None:
+                self.start = time
+            self.end = time
             for veh in timestep:
-                time = float(timestep.attrib["time"])
                 if veh.tag == "vehicle":
                     vehID = veh.attrib["id"]
                     if vehID not in trajectories:
