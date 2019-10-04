@@ -41,6 +41,18 @@ class Edge:
         """
         return len(self.lanes)
 
+    def intersects(self, other):
+        """
+        Checks if any lane in the edge intersects a specified geometry
+        :param other: the geometry against which to check
+        :return: True if any lane intersects other, else False
+        :type other: BaseGeometry
+        """
+        for lane in self.lanes:
+            if other.intersects(lane.shape):
+                return True
+        return False
+
     def plot(self, ax):
         """
         Plots the lane
@@ -188,17 +200,26 @@ class Net:
                 junction = Junction(obj.attrib)
                 self.junctions.append(junction)
 
-    def plot(self, ax):
+    def plot(self, ax, clip_to_limits=False):
         """
         Plots the Net.
         :param ax: matplotlib Axes object
+        :param clip_to_limits: if True, only objects in the current view will be drawn. Speeds up saving of animations.
         :return: None
         :type ax: plt.Axes
+        :type clip_to_limits: bool
         """
+        ax.set_clip_box(ax.get_window_extent())
+        xmin, xmax = ax.get_xlim()
+        ymin, ymax = ax.get_ylim()
+        bounds = [[xmin, ymax], [xmax, ymax], [xmax, ymin], [xmin, ymin]]
+        window = Polygon(bounds)
         for edge in self.edges:
-            edge.plot(ax)
+            if not clip_to_limits or edge.intersects(window):
+                edge.plot(ax)
         for junction in self.junctions:
-            junction.plot(ax)
+            if not clip_to_limits or (junction.shape is not None and junction.shape.intersects(window)):
+                junction.plot(ax)
 
 
 if __name__ == "__main__":
