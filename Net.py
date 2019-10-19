@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 from shapely.geometry import *
 import matplotlib.patches
 import matplotlib.pyplot as plt
+import Utils
 
 DEFAULT_LANE_WIDTH = 3.2
 US_MARKINGS = False  # if True, US-style lane markings will be drawn
@@ -142,13 +143,14 @@ class Lane:
         """
         if "passenger" in self.allow or "passenger" not in self.disallow and self.parentEdge.function != "internal":
             if self.inverse_lane_index() == 0:
-                fmt = "y-" if US_MARKINGS is True else "w-"
+                color, dashes = ("y", (1, 0)) if US_MARKINGS is True else ("w", (1, 0))
             else:
-                fmt = "w--"
+                color, dashes = "w", (3, 9)
             leftEdge = self.alignment.parallel_offset(self.width/2, side="left")
             try:
                 x, y = zip(*leftEdge.coords)
-                ax.plot(x, y, fmt)
+                line = Utils.LineDataUnits(x, y, linewidth=0.5, color=color, dashes=dashes)
+                ax.add_line(line)
             except NotImplementedError:
                 print("Can't print center stripe for lane " + self.id)
 
