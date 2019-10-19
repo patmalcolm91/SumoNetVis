@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 from shapely.geometry import *
 import matplotlib.patches
 import matplotlib.pyplot as plt
-from . import Utils
+from SumoNetVis import Utils
 
 DEFAULT_LANE_WIDTH = 3.2
 US_MARKINGS = False  # if True, US-style lane markings will be drawn
