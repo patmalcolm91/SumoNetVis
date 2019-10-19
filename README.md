@@ -1,7 +1,8 @@
 # SumoNetVis
 A Python library for visualizing a Sumo network and trajectories with matplotlib.
 
-![Example plot of an intersection](Example_Plot.png)
+![Example plot of an intersection with trajectory colored by speed](Example_Plot.png)
+![Example plot of an curving road with bike lanes](Example_Plot_2.png)
 
 ## Installation
 Simply download this repository to your working directory. You can then import the library with the following line:
