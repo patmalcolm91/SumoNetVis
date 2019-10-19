@@ -202,15 +202,29 @@ class Net:
                 junction = Junction(obj.attrib)
                 self.junctions.append(junction)
 
-    def plot(self, ax, clip_to_limits=False):
+    def _get_extents(self):
+        lane_geoms = []
+        for edge in self.edges:
+            for lane in edge.lanes:
+                lane_geoms.append(lane.shape)
+        polygons = MultiPolygon(lane_geoms)
+        return polygons.bounds
+
+    def plot(self, ax, clip_to_limits=False, zoom_to_extents=True):
         """
         Plots the Net.
         :param ax: matplotlib Axes object
         :param clip_to_limits: if True, only objects in the current view will be drawn. Speeds up saving of animations.
+        :param zoom_to_extents: if True, window will be set to the network extents. Ignored if clip_to_limits is True
         :return: None
         :type ax: plt.Axes
         :type clip_to_limits: bool
+        :type zoom_to_extents: bool
         """
+        if zoom_to_extents and not clip_to_limits:
+            x_min, y_min, x_max, y_max = self._get_extents()
+            ax.set_xlim(x_min, x_max)
+            ax.set_ylim(y_min, y_max)
         ax.set_clip_box(ax.get_window_extent())
         xmin, xmax = ax.get_xlim()
         ymin, ymax = ax.get_ylim()
