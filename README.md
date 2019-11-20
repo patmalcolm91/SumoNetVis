@@ -8,19 +8,11 @@ Basic trajectory plotting from FCD outputs is built in, but it is also possible 
 top of the network with the full flexibility and power of matplotlib and other compatible libraries, such as seaborn.
 
 ## Installation
-Simply download this repository to your working directory. You can then import the library with the following line:
+This package can be installed via pip with the command ```pip install SumoNetVis```.
+You can then import the library with:
 
 ```python
 import SumoNetVis
-```
-
-If you have problems with your IDE's autocomplete feature, use this instead:
-
-```python
-try:
-    import .SumoNetVis
-except Exception:
-    import SumoNetVis
 ```
 
 ### Dependencies
