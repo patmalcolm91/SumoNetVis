@@ -6,6 +6,7 @@ Author: Patrick Malcolm
 
 import xml.etree.ElementTree as ET
 import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
 import numpy as np
 
 
@@ -113,28 +114,42 @@ class Trajectory:
         for i in range(len(self.x)):
             self.colors[i] = color_dict[self.lane[i]]
 
-    def plot(self, ax=None, start_time=0, end_time=np.inf, **kwargs):
+    def plot(self, ax=None, start_time=0, end_time=np.inf, zoom_to_extents=False, **kwargs):
         """
         Plots the trajectory
         :param ax: matplotlib Axes object. Defaults to current axes.
         :param start_time: time at which to start drawing
         :param end_time: time at which to end drawing
-        :param kwargs: keyword arguments to pass to matplotlib.pyplot.plot()
+        :param zoom_to_extents: if True, window will be set to Trajectory extents
+        :param kwargs: keyword arguments to pass to LineCollection or matplotlib.pyplot.plot()
         :type ax: plt.Axes
         :type start_time: float
         :type end_time: float
+        :type zoom_to_extents: bool
         :return: None
         """
         if ax is None:
             ax = plt.gca()
         if len(self.x) < 2:
             return
+        segs, colors = [], []  # line segments and colors
+        x_min, y_min, x_max, y_max = np.inf, np.inf, -np.inf, -np.inf
         for i in range(len(self.x)-2):
             if self.time[i] < start_time:
                 continue
             if self.time[i+1] > end_time:
                 break
-            ax.plot(self.x[i:i+2], self.y[i:i+2], c=self.colors[i], **kwargs)
+            if zoom_to_extents:
+                x_min, x_max = min(x_min, self.x[i]), max(x_max, self.x[i])
+                y_min, y_max = min(y_min, self.y[i]), max(y_max, self.y[i])
+            segs.append([[self.x[i], self.y[i]], [self.x[i+1], self.y[i+1]]])
+            colors.append(self.colors[i])
+        lc = LineCollection(segs, colors=colors, **kwargs)
+        ax.add_collection(lc)
+        if zoom_to_extents:
+            dx, dy = x_max - x_min, y_max - y_min
+            ax.set_xlim([x_min-0.05*dx, x_max+0.05*dx])
+            ax.set_ylim([y_min-0.05*dy, y_max+0.05*dy])
 
 
 class Trajectories:
