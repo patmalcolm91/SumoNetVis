@@ -36,15 +36,16 @@ import SumoNetVis
 import matplotlib.pyplot as plt
 # Plot Sumo Network
 net = SumoNetVis.Net("path/to/yourfile.net.xml")
-fig, ax = plt.subplots()
-net.plot(ax)
+net.plot()
 # Plot trajectories
 trajectories = SumoNetVis.Trajectories("path/to/fcd-output.xml")
 trajectories["vehicle_id"].assign_colors_speed()
-trajectories["vehicle_id"].plot(ax)
+trajectories["vehicle_id"].plot()
 # Show figure
 plt.show()
 ```
+
+You also have the option of passing a matplotlib Axes object to the plot methods.
 
 ## Contribution
 Issues and pull requests are welcome.

@@ -113,10 +113,10 @@ class Trajectory:
         for i in range(len(self.x)):
             self.colors[i] = color_dict[self.lane[i]]
 
-    def plot(self, ax, start_time=0, end_time=np.inf, **kwargs):
+    def plot(self, ax=None, start_time=0, end_time=np.inf, **kwargs):
         """
         Plots the trajectory
-        :param ax: matplotlib Axes object
+        :param ax: matplotlib Axes object. Defaults to current axes.
         :param start_time: time at which to start drawing
         :param end_time: time at which to end drawing
         :param kwargs: keyword arguments to pass to matplotlib.pyplot.plot()
@@ -125,6 +125,8 @@ class Trajectory:
         :type end_time: float
         :return: None
         """
+        if ax is None:
+            ax = plt.gca()
         if len(self.x) < 2:
             return
         for i in range(len(self.x)-2):
@@ -202,10 +204,10 @@ class Trajectories:
         for vehID in trajectories:
             self.append(trajectories[vehID])
 
-    def plot(self, ax, start_time=0, end_time=np.inf, **kwargs):
+    def plot(self, ax=None, start_time=0, end_time=np.inf, **kwargs):
         """
         Plots all of the trajectories contained in this object.
-        :param ax: matplotlib Axes object
+        :param ax: matplotlib Axes object. Defaults to current axes.
         :param start_time: time at which to start drawing
         :param end_time: time at which to stop drawing
         :param kwargs: keyword arguments to pass to plot function
@@ -214,6 +216,8 @@ class Trajectories:
         :type start_time: float
         :type end_time: float
         """
+        if ax is None:
+            ax = plt.gca()
         for trajectory in self:
             trajectory.plot(ax, start_time, end_time, **kwargs)
 

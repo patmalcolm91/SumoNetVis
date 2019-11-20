@@ -210,10 +210,10 @@ class Net:
         polygons = MultiPolygon(lane_geoms)
         return polygons.bounds
 
-    def plot(self, ax, clip_to_limits=False, zoom_to_extents=True):
+    def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True):
         """
         Plots the Net.
-        :param ax: matplotlib Axes object
+        :param ax: matplotlib Axes object. Defaults to current axes.
         :param clip_to_limits: if True, only objects in the current view will be drawn. Speeds up saving of animations.
         :param zoom_to_extents: if True, window will be set to the network extents. Ignored if clip_to_limits is True
         :return: None
@@ -221,6 +221,8 @@ class Net:
         :type clip_to_limits: bool
         :type zoom_to_extents: bool
         """
+        if ax is None:
+            ax = plt.gca()
         if zoom_to_extents and not clip_to_limits:
             x_min, y_min, x_max, y_max = self._get_extents()
             ax.set_xlim(x_min, x_max)
