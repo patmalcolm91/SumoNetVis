@@ -39,5 +39,17 @@ plt.show()
 
 You also have the option of passing a matplotlib Axes object to the plot methods.
 
+### Animation
+Instead of visualizing Trajectories as lines, an animation can be generated using the ```matplotlib.animation``` module.
+
+```python
+import matplotlib.animation as animation
+trajectories = SumoNetVis.Trajectories("path/to/fcd-output.xml")
+fig, ax = plt.subplots()
+a = animation.FuncAnimation(fig, trajectories.plot_points, frames=trajectories.timestep_range(), repeat=False,
+                            interval=1000*trajectories.timestep, fargs=(ax,), blit=True)
+plt.show()
+```
+
 ## Contribution
 Issues and pull requests are welcome.
