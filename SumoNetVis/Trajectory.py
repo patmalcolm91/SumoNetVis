@@ -212,6 +212,13 @@ class Trajectories:
         else:
             raise TypeError("Index type " + type(i).__name__ + " not supported by class " + type(self).__name__)
 
+    def timestep_range(self):
+        """
+        Returns a numpy ndarray consisting of every simulation time
+        :return: ndarray of all simulation times
+        """
+        return np.arange(self.start, self.end, self.timestep)
+
     def append(self, trajectory):
         self.trajectories.append(trajectory)
 
