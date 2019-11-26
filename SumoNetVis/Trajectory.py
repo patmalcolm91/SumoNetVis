@@ -11,8 +11,9 @@ import numpy as np
 
 
 class Trajectory:
-    def __init__(self, id, time=None, x=None, y=None, speed=None, angle=None, lane=None, colors=None):
+    def __init__(self, id, type, time=None, x=None, y=None, speed=None, angle=None, lane=None, colors=None):
         self.id = id
+        self.type = type
         self.time = time if time is not None else []
         self.x = x if x is not None else []
         self.y = y if y is not None else []
@@ -208,8 +209,9 @@ class Trajectories:
             for veh in timestep:
                 if veh.tag == "vehicle":
                     vehID = veh.attrib["id"]
+                    type = veh.attrib["type"]
                     if vehID not in trajectories:
-                        trajectories[vehID] = Trajectory(vehID)
+                        trajectories[vehID] = Trajectory(vehID, type)
                     x = float(veh.attrib["x"])
                     y = float(veh.attrib["y"])
                     lane = veh.attrib["lane"]
