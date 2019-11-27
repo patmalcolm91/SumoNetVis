@@ -302,8 +302,6 @@ class Trajectories:
         return tuple(self.graphics[traj] for traj in self.graphics)
 
 
-
-
 if __name__ == "__main__":
     trajectories = Trajectories("../2019-08-30-17-01-38fcd-output.xml")
     fig, ax = plt.subplots()
