@@ -52,5 +52,22 @@ a = animation.FuncAnimation(fig, trajectories.plot_points, frames=trajectories.t
 plt.show()
 ```
 
+The plot settings for each vehicle can be customized and the color of each point can be animated, as shown in the
+following example.
+
+```python
+for trajectory in trajectories:
+        trajectory.assign_colors_speed()
+        trajectory.point_plot_kwargs["ms"] = 8  # set marker size. Can set any kwargs taken by matplotlib.pyplot.plot().
+```
+
+In order to animate the color of the points based on the assigned color scheme, an additional farg must be passed
+when creating the animation.
+
+```python
+a = animation.FuncAnimation(fig, trajectories.plot_points, frames=trajectories.timestep_range(), repeat=False,
+                            interval=1000*trajectories.timestep, fargs=(ax, True), blit=True)
+```
+
 ## Contribution
 Issues and pull requests are welcome.
