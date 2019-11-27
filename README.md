@@ -3,6 +3,7 @@ A Python library for visualizing a Sumo network and trajectories with matplotlib
 
 ![Example plot of an intersection with trajectory colored by speed](Example_Plot.png)
 ![Example plot of an curving road with bike lanes](Example_Plot_2.png)
+![Example animation](Example_Animation.gif)
 
 Basic trajectory plotting from FCD outputs is built in, but it is also possible to plot custom data and graphics on
 top of the network with the full flexibility and power of matplotlib and other compatible libraries, such as seaborn.
