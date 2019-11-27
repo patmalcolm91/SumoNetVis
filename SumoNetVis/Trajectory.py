@@ -11,8 +11,10 @@ import numpy as np
 
 
 class Trajectory:
-    def __init__(self, id, time=None, x=None, y=None, speed=None, angle=None, lane=None, colors=None):
+    def __init__(self, id, type, time=None, x=None, y=None, speed=None, angle=None, lane=None, colors=None):
         self.id = id
+        self.type = type
+        self.point_plot_kwargs = {"color": "blue", "ms": 5, "markeredgecolor": "black", "zorder": 200}
         self.time = time if time is not None else []
         self.x = x if x is not None else []
         self.y = y if y is not None else []
@@ -114,6 +116,29 @@ class Trajectory:
         for i in range(len(self.x)):
             self.colors[i] = color_dict[self.lane[i]]
 
+    def get_values_at_time(self, time):
+        """
+        Returns all of the values at the given simulation time
+        :param time: Sumo simulation time for which to fetch values
+        :return: x, y, speed, angle, lane, colors
+        """
+        try:
+            idx = self.time.index(time)
+        except ValueError:
+            return {"x": None,
+                    "y": None,
+                    "speed": None,
+                    "angle": None,
+                    "lane": None,
+                    "color": None}
+        else:
+            return {"x": self.x[idx],
+                    "y": self.y[idx],
+                    "speed": self.speed[idx],
+                    "angle": self.angle[idx],
+                    "lane": self.lane[idx],
+                    "color": self.colors[idx]}
+
     def plot(self, ax=None, start_time=0, end_time=np.inf, zoom_to_extents=False, **kwargs):
         """
         Plots the trajectory
@@ -160,6 +185,7 @@ class Trajectories:
         :type file: str
         """
         self.trajectories = []  # type: list[Trajectory]
+        self.graphics = dict()
         self.start = None
         self.end = None
         self.timestep = None
@@ -186,6 +212,13 @@ class Trajectories:
         else:
             raise TypeError("Index type " + type(i).__name__ + " not supported by class " + type(self).__name__)
 
+    def timestep_range(self):
+        """
+        Returns a numpy ndarray consisting of every simulation time
+        :return: ndarray of all simulation times
+        """
+        return np.arange(self.start, self.end, self.timestep)
+
     def append(self, trajectory):
         self.trajectories.append(trajectory)
 
@@ -208,8 +241,9 @@ class Trajectories:
             for veh in timestep:
                 if veh.tag == "vehicle":
                     vehID = veh.attrib["id"]
+                    type = veh.attrib["type"]
                     if vehID not in trajectories:
-                        trajectories[vehID] = Trajectory(vehID)
+                        trajectories[vehID] = Trajectory(vehID, type)
                     x = float(veh.attrib["x"])
                     y = float(veh.attrib["y"])
                     lane = veh.attrib["lane"]
@@ -235,6 +269,44 @@ class Trajectories:
             ax = plt.gca()
         for trajectory in self:
             trajectory.plot(ax, start_time, end_time, **kwargs)
+
+    def plot_points(self, time, ax=None, animate_color=False):
+        """
+        Plots the position of each vehicle at the specified time as a point.
+        The style for each point is controlled by each Trajectory's point_plot_kwargs attribute.
+        :param time: simulation time for which to plot vehicle positions.
+        :param ax: matplotlib Axes object. Defaults to current axes.
+        :param animate_color: If True, the color of the marker will be animated using the Trajectory's color values.
+        :return: matplotlib Artist objects corresponding to the rendered points. Required for blitting animation.
+        :type time: float
+        :type ax: plt.Axes
+        :type animate_color: bool
+        """
+        if ax is None:
+            ax = plt.gca()
+        for traj in self.trajectories:
+            values = traj.get_values_at_time(time)
+            x, y = values["x"], values["y"]
+            angle = values["angle"]
+            color = values["color"]
+            if x is None or y is None:
+                if time >= np.nanmax(traj.time):
+                    if traj in self.graphics:
+                        self.graphics[traj].remove()
+                        self.graphics.pop(traj)
+                continue
+            if animate_color and color is not None:
+                traj.point_plot_kwargs["color"] = color
+            angle = (360 - angle) % 360
+            if traj not in self.graphics:
+                self.graphics[traj], = ax.plot(x, y, marker=(3, 0, angle), **traj.point_plot_kwargs)
+            else:
+                self.graphics[traj].set_xdata(x)
+                self.graphics[traj].set_ydata(y)
+                self.graphics[traj].set_marker((3, 0, angle))
+                if animate_color:
+                    self.graphics[traj].set_color(traj.point_plot_kwargs["color"])
+        return tuple(self.graphics[traj] for traj in self.graphics)
 
 
 if __name__ == "__main__":
