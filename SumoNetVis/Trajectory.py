@@ -14,7 +14,7 @@ class Trajectory:
     def __init__(self, id, type, time=None, x=None, y=None, speed=None, angle=None, lane=None, colors=None):
         self.id = id
         self.type = type
-        self.point_plot_kwargs = {"color": "blue", "ms": 4, "markeredgecolor": "black", "zorder": 200}
+        self.point_plot_kwargs = {"color": "blue", "ms": 5, "markeredgecolor": "black", "zorder": 200}
         self.time = time if time is not None else []
         self.x = x if x is not None else []
         self.y = y if y is not None else []
