@@ -270,34 +270,35 @@ class Trajectories:
         for trajectory in self:
             trajectory.plot(ax, start_time, end_time, **kwargs)
 
-    def plot_points(self, time, ax=None, fmt="o"):
+    def plot_points(self, time, ax=None):
         """
         Plots the position of each vehicle at the specified time as a point.
         The style for each point is controlled by each Trajectory's point_plot_kwargs attribute.
         :param time: simulation time for which to plot vehicle positions.
         :param ax: matplotlib Axes object. Defaults to current axes.
-        :param fmt: line format string to pass to matplotlib.pyplot.plot().
         :return: matplotlib Artist objects corresponding to the rendered points. Required for blitting animation.
         :type time: float
         :type ax: plt.Axes
-        :type fmt: str
         """
         if ax is None:
             ax = plt.gca()
         for traj in self.trajectories:
             values = traj.get_values_at_time(time)
             x, y = values["x"], values["y"]
+            angle = values["angle"]
             if x is None or y is None:
                 if time >= np.nanmax(traj.time):
                     if traj in self.graphics:
                         self.graphics[traj].remove()
                         self.graphics.pop(traj)
                 continue
+            angle = (360 - angle) % 360
             if traj not in self.graphics:
-                self.graphics[traj], = ax.plot(x, y, fmt, **traj.point_plot_kwargs)
+                self.graphics[traj], = ax.plot(x, y, marker=(3, 0, angle), **traj.point_plot_kwargs)
             else:
                 self.graphics[traj].set_xdata(x)
                 self.graphics[traj].set_ydata(y)
+                self.graphics[traj].set_marker((3, 0, angle))
         return tuple(self.graphics[traj] for traj in self.graphics)
 
 
