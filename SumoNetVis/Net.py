@@ -45,6 +45,17 @@ class Edge:
         self.lanes.append(lane)
         lane.parentEdge = self
 
+    def get_lane(self, index):
+        """
+        Returns the lane on the Edge with the given index
+        :param index: lane index of Lane to retrieve
+        :return: Lane
+        """
+        for lane in self.lanes:
+            if lane.index == index:
+                return lane
+        raise IndexError("Edge contains no Lane with given index.")
+
     def lane_count(self):
         """
         Returns the number of lanes to which this Edge is a parent
