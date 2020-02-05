@@ -88,6 +88,10 @@ class Lane:
         self.speed = float(attrib["speed"])
         self.allow = attrib["allow"] if "allow" in attrib else ""
         self.disallow = attrib["disallow"] if "disallow" in attrib else ""
+        if self.allow == "" and self.disallow != "":
+            self.allow = Utils.invert_lane_allowance(self.disallow)
+        elif self.disallow == "" and self.allow != "":
+            self.disallow = Utils.invert_lane_allowance(self.allow)
         self.width = float(attrib["width"]) if "width" in attrib else DEFAULT_LANE_WIDTH
         self.endOffset = attrib["endOffset"] if "endOffset" in attrib else 0
         self.acceleration = attrib["acceleration"] if "acceleration" in attrib else "False"

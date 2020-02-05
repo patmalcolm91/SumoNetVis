@@ -4,6 +4,26 @@ Contains miscellaneous utility classes and functions for internal library use.
 
 from matplotlib.lines import Line2D
 
+VEHICLE_CLASS_LIST = ["private", "emergency", "authority", "army", "vip", "pedestrian", "passenger", "hov", "taxi",
+                      "bus", "coach", "delivery", "truck", "trailer", "motorcycle", "moped", "bicycle", "evehicle",
+                      "tram", "rail_urban", "rail", "rail_electric", "rail_fast", "ship", "custom1", "custom2"]
+
+
+def invert_lane_allowance(allow):
+    """
+    Calculates the corresponding disallow string for a given allow string (or vice versa).
+    :param allow: the allow string
+    :return: the disallow string
+    """
+    if allow == "all":
+        return ""
+    allow = allow.split(" ")
+    disallow = []
+    for vClass in VEHICLE_CLASS_LIST:
+        if vClass not in allow:
+            disallow.append(vClass)
+    return " ".join(disallow)
+
 
 class LineDataUnits(Line2D):
     """
