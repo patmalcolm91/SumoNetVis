@@ -22,7 +22,33 @@ COLOR_SCHEME = {
     "no_passenger": "#5C5C5C",
     "other": "#000000"
 }
-US_MARKINGS = False  # if True, US-style lane markings will be drawn
+USA_STYLE = "USA"
+EUR_STYLE = "EUR"
+LANE_MARKINGS_STYLE = EUR_STYLE  # desired lane marking style
+
+
+def set_style(style="EUR"):
+    """
+    Sets the lane marking style to either USA or EUR.
+    :param style: desired style ("USA" or "EUR")
+    :return: None
+    :type style: str
+    """
+    global LANE_MARKINGS_STYLE
+    if style not in [USA_STYLE, EUR_STYLE]:
+        raise IndexError("Specified lane marking style not supported: " + style)
+    LANE_MARKINGS_STYLE = style
+
+
+def set_stripe_width_scale(factor=1):
+    """
+    Sets the lane striping width scale factor.
+    :param factor: desired scale factor
+    :return: None
+    :type factor: float
+    """
+    global STRIPE_WIDTH_SCALE_FACTOR
+    STRIPE_WIDTH_SCALE_FACTOR = factor
 
 
 class Edge:
@@ -193,7 +219,7 @@ class Lane:
         if self.parentEdge.function == "internal" or self.allow == "ship" or self.allow == "rail":
             return
         # US-style markings
-        if US_MARKINGS:
+        if LANE_MARKINGS_STYLE == USA_STYLE:
             lw = 0.1 * STRIPE_WIDTH_SCALE_FACTOR
             # Draw centerline stripe if necessary
             if self.inverse_lane_index() == 0:
@@ -219,7 +245,7 @@ class Lane:
                 color, dashes = "w", (100, 0)
                 self._draw_lane_marking(ax, rightEdge, lw, color, dashes)
         # European-style markings
-        else:
+        elif LANE_MARKINGS_STYLE == EUR_STYLE:
             lw = 0.1 * STRIPE_WIDTH_SCALE_FACTOR
             # Draw centerline stripe if necessary
             if self.inverse_lane_index() == 0:
@@ -301,17 +327,24 @@ class Net:
         polygons = MultiPolygon(lane_geoms)
         return polygons.bounds
 
-    def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True):
+    def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1):
         """
         Plots the Net.
         :param ax: matplotlib Axes object. Defaults to current axes.
         :param clip_to_limits: if True, only objects in the current view will be drawn. Speeds up saving of animations.
         :param zoom_to_extents: if True, window will be set to the network extents. Ignored if clip_to_limits is True
+        :param style: lane marking style to use for plotting ("USA" or "EUR"). Defaults to last used or "EUR".
+        :param stripe_width_scale: scale factor for lane striping widths
         :return: None
         :type ax: plt.Axes
         :type clip_to_limits: bool
         :type zoom_to_extents: bool
+        :type style: str
+        :type stripe_width_scale: float
         """
+        if style is not None:
+            set_style(style)
+        set_stripe_width_scale(stripe_width_scale)
         if ax is None:
             ax = plt.gca()
         if zoom_to_extents and not clip_to_limits:
