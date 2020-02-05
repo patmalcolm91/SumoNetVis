@@ -146,6 +146,8 @@ class Lane:
         :return: True if vClass allowed, else False
         :type vClass: str
         """
+        if vClass == "all":
+            return not False in [self.allows(vc) for vc in Utils.VEHICLE_CLASS_LIST]
         if vClass not in Utils.VEHICLE_CLASS_LIST:
             raise IndexError("Invalid vClass " + vClass)
         if self.allow == "all" or (self.allow == "" and self.disallow == ""):
