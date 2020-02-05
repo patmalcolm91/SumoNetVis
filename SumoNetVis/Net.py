@@ -146,7 +146,7 @@ class Lane:
 
     def plot_lane_markings(self, ax):
         """
-        Guesses and plots some simple lane markings. TODO: use fill_between to plot thickness in data coordinates
+        Guesses and plots some simple lane markings.
         :param ax: matplotlib Axes object
         :return: None
         :type ax: plt.Axes
