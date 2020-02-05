@@ -367,7 +367,8 @@ class Net:
 
 
 if __name__ == "__main__":
-    net = Net('../MT_Course.net.xml')
+    net = Net('../Sample/test.net.xml')
     fig, ax = plt.subplots()
-    net.plot(ax)
+    # ax.set_facecolor("green")
+    net.plot(ax, style=USA_STYLE, stripe_width_scale=3)
     plt.show()
