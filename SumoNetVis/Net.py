@@ -112,6 +112,21 @@ class Lane:
         self.color = self.lane_color()
         self.parentEdge = None
 
+    def allows(self, vClass):
+        """
+        Returns True if vClass is allowed on Lane, else False.
+        :param vClass: vehicle class to check
+        :return: True if vClass allowed, else False
+        :type vClass: str
+        """
+        if vClass not in Utils.VEHICLE_CLASS_LIST:
+            raise IndexError("Invalid vClass " + vClass)
+        if self.allow == "all" or (self.allow == "" and self.disallow == ""):
+            return True
+        if self.disallow == "all":
+            return False
+        return vClass in self.allow
+
     def lane_color(self):
         """
         Returns the Sumo-GUI default lane color for this lane.
