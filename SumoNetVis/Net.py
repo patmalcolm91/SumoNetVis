@@ -242,7 +242,7 @@ class Lane:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
                 self._draw_lane_marking(ax, leftEdge, lw, color, dashes)
             # draw outer lane marking if necessary
-            if self.index == 0 and not self.allows("pedestrian"):
+            if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width/2, side="right")
                 color, dashes = "w", (100, 0)
                 self._draw_lane_marking(ax, rightEdge, lw, color, dashes)
@@ -268,7 +268,7 @@ class Lane:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
                 self._draw_lane_marking(ax, leftEdge, lw, color, dashes)
             # draw outer lane marking if necessary
-            if self.index == 0 and not self.allows("pedestrian"):
+            if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width / 2, side="right")
                 color, dashes = "w", (100, 0)
                 self._draw_lane_marking(ax, rightEdge, lw, color, dashes)
