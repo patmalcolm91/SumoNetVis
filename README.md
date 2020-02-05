@@ -38,7 +38,12 @@ trajectories["vehicle_id"].plot()
 plt.show()
 ```
 
-You also have the option of passing a matplotlib Axes object to the plot methods.
+the Net.plot() function takes the following optional parameters:
+* ax: matplotlib Axes object (defaults to currently active Axes)
+* clip_to_limits: if True, only objects visible in the current view extents will be drawn
+* zoom_to_extents: auto-zoom to Net extents (defaults to True)
+* style: lane marking style to use ("USA" or "EUR")
+* stripe_width_scale: scale factor for lane marking widths (defaults to 1)
 
 ### Animation
 Instead of visualizing Trajectories as lines, an animation can be generated using the ```matplotlib.animation``` module.
