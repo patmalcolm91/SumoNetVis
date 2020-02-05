@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from SumoNetVis import Utils
 
 DEFAULT_LANE_WIDTH = 3.2
+STRIPE_WIDTH_SCALE_FACTOR = 1  # factor by which to scale striping widths
 COLOR_SCHEME = {
     "junction": "#660000",
     "pedestrian": "#808080",
@@ -174,6 +175,14 @@ class Lane:
         """
         return self.parentEdge.lane_count() - self.index - 1
 
+    def _draw_lane_marking(self, ax, line, width, color, dashes):
+        try:
+            x, y = zip(*line.coords)
+            line = Utils.LineDataUnits(x, y, linewidth=width, color=color, dashes=dashes)
+            ax.add_line(line)
+        except NotImplementedError:
+            print("Can't print center stripe for lane " + self.id)
+
     def plot_lane_markings(self, ax):
         """
         Guesses and plots some simple lane markings.
@@ -181,18 +190,60 @@ class Lane:
         :return: None
         :type ax: plt.Axes
         """
-        if "passenger" in self.allow or "passenger" not in self.disallow and self.parentEdge.function != "internal":
+        if self.parentEdge.function == "internal" or self.allow == "ship" or self.allow == "rail":
+            return
+        # US-style markings
+        if US_MARKINGS:
+            lw = 0.1 * STRIPE_WIDTH_SCALE_FACTOR
+            # Draw centerline stripe if necessary
             if self.inverse_lane_index() == 0:
-                color, dashes = ("y", (1, 0)) if US_MARKINGS is True else ("w", (1, 0))
+                leftEdge = self.alignment.parallel_offset(self.width/2-lw, side="left")
+                color, dashes = "y", (100, 0)
+                self._draw_lane_marking(ax, leftEdge, lw, color, dashes)
+            # Draw non-centerline markings
             else:
-                color, dashes = "w", (3, 9)
-            leftEdge = self.alignment.parallel_offset(self.width/2, side="left")
-            try:
-                x, y = zip(*leftEdge.coords)
-                line = Utils.LineDataUnits(x, y, linewidth=0.5, color=color, dashes=dashes)
-                ax.add_line(line)
-            except NotImplementedError:
-                print("Can't print center stripe for lane " + self.id)
+                adjacent_lane = self.parentEdge.get_lane(self.index+1)
+                leftEdge = self.alignment.parallel_offset(self.width/2, side="left")
+                color, dashes = "w", (3, 9)  # set default settings
+                if self.allows("bicycle") != adjacent_lane.allows("bicycle"):
+                    dashes = (100, 0)  # solid line where bicycles may not change lanes
+                elif self.allows("passenger") != adjacent_lane.allows("passenger"):
+                    if self.allows("bicycle"):
+                        dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
+                    else:
+                        dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
+                self._draw_lane_marking(ax, leftEdge, lw, color, dashes)
+            # draw outer lane marking if necessary
+            if self.index == 0 and not self.allows("pedestrian"):
+                rightEdge = self.alignment.parallel_offset(self.width/2, side="right")
+                color, dashes = "w", (100, 0)
+                self._draw_lane_marking(ax, rightEdge, lw, color, dashes)
+        # European-style markings
+        else:
+            lw = 0.1 * STRIPE_WIDTH_SCALE_FACTOR
+            # Draw centerline stripe if necessary
+            if self.inverse_lane_index() == 0:
+                leftEdge = self.alignment.parallel_offset(self.width/2, side="left")
+                color, dashes = "w", (100, 0)
+                self._draw_lane_marking(ax, leftEdge, lw, color, dashes)
+            # Draw non-centerline markings
+            else:
+                adjacent_lane = self.parentEdge.get_lane(self.index + 1)
+                leftEdge = self.alignment.parallel_offset(self.width / 2, side="left")
+                color, dashes = "w", (3, 9)  # set default settings
+                if self.allows("bicycle") != adjacent_lane.allows("bicycle"):
+                    dashes = (100, 0)  # solid line where bicycles may not change lanes
+                elif self.allows("passenger") != adjacent_lane.allows("passenger"):
+                    if self.allows("bicycle"):
+                        dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
+                    else:
+                        dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
+                self._draw_lane_marking(ax, leftEdge, lw, color, dashes)
+            # draw outer lane marking if necessary
+            if self.index == 0 and not self.allows("pedestrian"):
+                rightEdge = self.alignment.parallel_offset(self.width / 2, side="right")
+                color, dashes = "w", (100, 0)
+                self._draw_lane_marking(ax, rightEdge, lw, color, dashes)
 
 
 class Junction:
