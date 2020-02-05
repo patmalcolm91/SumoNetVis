@@ -11,6 +11,16 @@ import matplotlib.pyplot as plt
 from SumoNetVis import Utils
 
 DEFAULT_LANE_WIDTH = 3.2
+COLOR_SCHEME = {
+    "junction": "#660000",
+    "pedestrian": "#808080",
+    "bicycle": "#C0422C",
+    "ship": "#96C8C8",
+    "authority": "#FF0000",
+    "none": "#FFFFFF",
+    "no_passenger": "#5C5C5C",
+    "other": "#000000"
+}
 US_MARKINGS = False  # if True, US-style lane markings will be drawn
 
 
@@ -93,19 +103,19 @@ class Lane:
         :return: lane color
         """
         if self.allow == "pedestrian":
-            return "#808080"
+            return COLOR_SCHEME["pedestrian"]
         if self.allow == "bicycle":
-            return "#C0422C"
+            return COLOR_SCHEME["bicycle"]
         if self.allow == "ship":
-            return "#96C8C8"
+            return COLOR_SCHEME["ship"]
         if self.allow == "authority":
-            return "#FF0000"
+            return COLOR_SCHEME["authority"]
         if self.disallow == "all":
-            return "#FFFFFF"
+            return COLOR_SCHEME["none"]
         if "passenger" in self.disallow or "passenger" not in self.allow:
-            return "#5C5C5C"
+            return COLOR_SCHEME["no_passenger"]
         else:
-            return "#000000"
+            return COLOR_SCHEME["other"]
 
     def plot_alignment(self, ax):
         """
@@ -177,7 +187,7 @@ class Junction:
         :type ax: plt.Axes
         """
         if self.shape is not None:
-            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color="#660000")
+            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=COLOR_SCHEME["junction"])
             ax.add_patch(poly)
 
 
