@@ -1,7 +1,5 @@
 """
 Tools for plotting trajectories.
-
-Author: Patrick Malcolm
 """
 
 import xml.etree.ElementTree as ET
@@ -23,9 +21,10 @@ class Trajectory:
         self.lane = lane if lane is not None else []
         self.colors = colors if colors is not None else []
 
-    def append_point(self, time, x, y, speed=None, angle=None, lane=None, color="#000000"):
+    def _append_point(self, time, x, y, speed=None, angle=None, lane=None, color="#000000"):
         """
         Appends a point to the trajectory
+
         :type time: float
         :type x: float
         :type y: float
@@ -46,6 +45,7 @@ class Trajectory:
     def assign_colors_constant(self, color):
         """
         Assigns a constant color to the trajectory
+
         :param color: desired color
         :return: None
         """
@@ -54,10 +54,11 @@ class Trajectory:
     def assign_colors_speed(self, cmap=None, min_speed=0, max_speed=None):
         """
         Assigns colors to trajectory points based on the speed.
+
         :param cmap: cmap object or name of cmap to use
         :param min_speed: speed corresponding to low end of the color scale. If None, trajectory's min value is used
         :param max_speed: speed corresponding to high end of the color scale. If None, trajectory's max value is used
-        :return:None
+        :return: None
         :type min_speed: float
         :type max_speed: float
         """
@@ -79,6 +80,7 @@ class Trajectory:
     def assign_colors_angle(self, cmap=None, angle_mode="deg"):
         """
         Assigns colors to trajectory points based on the angle.
+
         :param cmap: cmap object or name of cmap to use
         :param angle_mode: units of the angle value. "deg", "rad", or "grad"
         :type angle_mode: str
@@ -98,6 +100,7 @@ class Trajectory:
     def assign_colors_lane(self, cmap=None, color_dict=None):
         """
         Assigns colors to the trajectory points based on the lane value
+
         :param cmap: cmap object or name of cmap to use to color lanes
         :param color_dict: dict to override random color selection. Keys are lane IDs, values are colors.
         :return: None
@@ -116,9 +119,10 @@ class Trajectory:
         for i in range(len(self.x)):
             self.colors[i] = color_dict[self.lane[i]]
 
-    def get_values_at_time(self, time):
+    def _get_values_at_time(self, time):
         """
         Returns all of the values at the given simulation time
+
         :param time: Sumo simulation time for which to fetch values
         :return: x, y, speed, angle, lane, colors
         """
@@ -142,6 +146,7 @@ class Trajectory:
     def plot(self, ax=None, start_time=0, end_time=np.inf, zoom_to_extents=False, **kwargs):
         """
         Plots the trajectory
+
         :param ax: matplotlib Axes object. Defaults to current axes.
         :param start_time: time at which to start drawing
         :param end_time: time at which to end drawing
@@ -181,6 +186,7 @@ class Trajectories:
     def __init__(self, file=None):
         """
         Initializes a Trajectories object.
+
         :param file: file from which to read trajectories
         :type file: str
         """
@@ -215,16 +221,18 @@ class Trajectories:
     def timestep_range(self):
         """
         Returns a numpy ndarray consisting of every simulation time
+
         :return: ndarray of all simulation times
         """
         return np.arange(self.start, self.end, self.timestep)
 
-    def append(self, trajectory):
+    def _append(self, trajectory):
         self.trajectories.append(trajectory)
 
     def read_from_fcd(self, file):
         """
         Reads trajectories from Sumo floating car data (fcd) output file.
+
         :param file: Sumo fcd output file
         :return: None
         :type file: str
@@ -249,13 +257,14 @@ class Trajectories:
                     lane = veh.attrib["lane"]
                     speed = float(veh.attrib["speed"])
                     angle = float(veh.attrib["angle"])
-                    trajectories[vehID].append_point(time, x, y, speed, angle, lane)
+                    trajectories[vehID]._append_point(time, x, y, speed, angle, lane)
         for vehID in trajectories:
-            self.append(trajectories[vehID])
+            self._append(trajectories[vehID])
 
     def plot(self, ax=None, start_time=0, end_time=np.inf, **kwargs):
         """
         Plots all of the trajectories contained in this object.
+
         :param ax: matplotlib Axes object. Defaults to current axes.
         :param start_time: time at which to start drawing
         :param end_time: time at which to stop drawing
@@ -274,6 +283,7 @@ class Trajectories:
         """
         Plots the position of each vehicle at the specified time as a point.
         The style for each point is controlled by each Trajectory's point_plot_kwargs attribute.
+
         :param time: simulation time for which to plot vehicle positions.
         :param ax: matplotlib Axes object. Defaults to current axes.
         :param animate_color: If True, the color of the marker will be animated using the Trajectory's color values.
@@ -285,7 +295,7 @@ class Trajectories:
         if ax is None:
             ax = plt.gca()
         for traj in self.trajectories:
-            values = traj.get_values_at_time(time)
+            values = traj._get_values_at_time(time)
             x, y = values["x"], values["y"]
             angle = values["angle"]
             color = values["color"]

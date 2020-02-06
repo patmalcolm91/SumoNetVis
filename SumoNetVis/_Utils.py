@@ -12,6 +12,7 @@ VEHICLE_CLASS_LIST = ["private", "emergency", "authority", "army", "vip", "pedes
 def invert_lane_allowance(allow):
     """
     Calculates the corresponding disallow string for a given allow string (or vice versa).
+
     :param allow: the allow string
     :return: the disallow string
     """
