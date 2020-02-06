@@ -75,5 +75,8 @@ a = animation.FuncAnimation(fig, trajectories.plot_points, frames=trajectories.t
                             interval=1000*trajectories.timestep, fargs=(ax, True), blit=True)
 ```
 
+## Documentation
+API documentation can be found [here](https://patmalcolm91.github.io/SumoNetVis/SumoNetVis.html)
+
 ## Contribution
 Issues and pull requests are welcome.
