@@ -376,7 +376,7 @@ class Net:
         bounds = [[xmin, ymax], [xmax, ymax], [xmax, ymin], [xmin, ymin]]
         window = Polygon(bounds)
         for edge in self.edges:
-            if not clip_to_limits or edge.intersects(window):
+            if edge.function != "internal" and (not clip_to_limits or edge.intersects(window)):
                 edge.plot(ax)
         for junction in self.junctions:
             if not clip_to_limits or (junction.shape is not None and junction.shape.intersects(window)):
