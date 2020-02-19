@@ -297,6 +297,8 @@ class _Junction:
         """
         self.id = attrib["id"]
         self.shape = None
+        self.incLanes = attrib["incLanes"].split(" ") if "incLanes" in attrib else []
+        self.intLanes = attrib["intLanes"].split(" ") if "intLanes" in attrib else []
         if "shape" in attrib:
             coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
             if len(coords) > 2:
