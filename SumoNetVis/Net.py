@@ -347,6 +347,7 @@ class Net:
         """
         self.edges = []
         self.junctions = []
+        self.connections = []
         net = ET.parse(file).getroot()
         for obj in net:
             if obj.tag == "edge":
@@ -358,6 +359,9 @@ class Net:
             elif obj.tag == "junction":
                 junction = _Junction(obj.attrib)
                 self.junctions.append(junction)
+            elif obj.tag == "connection":
+                connection = _Connection(obj.attrib)
+                self.connections.append(connection)
 
     def _get_extents(self):
         lane_geoms = []
