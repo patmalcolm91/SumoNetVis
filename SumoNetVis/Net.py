@@ -411,6 +411,21 @@ class Net:
                 content += junction_content
         return content
 
+    def generate_obj_text(self):
+        content = ""
+        vertex_count = 0
+        for edge in self.edges:
+            if edge.function == "internal":
+                continue
+            for lane in edge.lanes:
+                lane_content, vertex_count = lane.generate_obj_text(vertex_count)
+                content += lane_content
+        for junction in self.junctions:
+            if junction.shape is not None:
+                junction_content, vertex_count = junction.generate_obj_text(vertex_count)
+                content += junction_content
+        return content
+
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1):
         """
         Plots the Net.
