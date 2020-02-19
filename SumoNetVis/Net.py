@@ -224,6 +224,35 @@ class _Lane:
         """
         return self.parentEdge.lane_count() - self.index - 1
 
+    def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
+        vertices_2d = self.shape.boundary.coords
+        top_vertices, bottom_vertices = [], []
+        for vertex in vertices_2d:
+            bottom_vertices.append([vertex[0], vertex[1], z])
+            top_vertices.append([vertex[0], vertex[1], z+extrude_height])
+        vertices, faces = [], []
+        vertices += top_vertices
+        edge_size = len(top_vertices)
+        faces += [[i+1 for i in range(edge_size)]]
+        if extrude_height != 0:
+            vertices += bottom_vertices
+            faces += [[i, i+1, i+edge_size+1, i+edge_size] for i in range(edge_size)]
+            if include_bottom_face:
+                faces += [[i+edge_size+1 for i in range(edge_size)]]
+        return vertices, faces
+
+    def generate_obj_text(self, vertex_count=0):
+        content = ""
+        h = 0.15 if self.allow == "pedestrian" else 0
+        vertices, faces = self._get_3d_description(extrude_height=h)
+        content += "o " + self.id
+        content += "\nusemtl " + self._lane_type()
+        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
+        content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
+        content += "\n\n"
+        vertex_count += len(vertices)
+        return content, vertex_count
+
     def _draw_lane_marking(self, ax, line, width, color, dashes):
         try:
             x, y = zip(*line.coords)
@@ -306,8 +335,6 @@ class _Junction:
         """
         self.id = attrib["id"]
         self.shape = None
-        self.incLanes = attrib["incLanes"].split(" ") if "incLanes" in attrib else []
-        self.intLanes = attrib["intLanes"].split(" ") if "intLanes" in attrib else []
         if "shape" in attrib:
             coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
             if len(coords) > 2:
@@ -356,12 +383,16 @@ class Net:
         polygons = MultiPolygon(lane_geoms)
         return polygons.bounds
 
-    def _get_lane(self, lane_id):
-        edge_id = "".join(lane_id.split("_")[:-1])
-        lane_num = int(lane_id.split("_")[-1])
+    def generate_obj_text(self):
+        content = ""
+        vertex_count = 0
         for edge in self.edges:
-            if edge.id == edge_id:
-                return edge.get_lane(lane_num)
+            if edge.function == "internal":
+                continue
+            for lane in edge.lanes:
+                lane_content, vertex_count = lane.generate_obj_text(vertex_count)
+                content += lane_content
+        return content
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1):
         """
