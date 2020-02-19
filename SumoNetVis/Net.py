@@ -325,6 +325,28 @@ class _Lane:
                 self._draw_lane_marking(ax, rightEdge, lw, color, dashes)
 
 
+class _Connection:
+    def __init__(self, attrib):
+        self.from_edge = attrib["from"]
+        self.to_edge = attrib["to"]
+        self.from_lane = attrib["fromLane"]
+        self.to_lane = attrib["toLane"]
+        self.via = attrib["via"] if "via" in attrib else None
+        self.dir = attrib["dir"]
+        self.state = attrib["state"]
+
+        if "shape" in attrib:
+            coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
+            self.shape = LineString(coords)
+        else:
+            self.shape = None
+
+    def plot_alignment(self, ax):
+        if self.shape:
+            x, y = zip(*self.shape.coords)
+            ax.plot(x, y)
+
+
 class _Junction:
     def __init__(self, attrib):
         """
@@ -378,6 +400,7 @@ class Net:
         """
         self.edges = []
         self.junctions = []
+        self.connections = []
         net = ET.parse(file).getroot()
         for obj in net:
             if obj.tag == "edge":
@@ -389,6 +412,9 @@ class Net:
             elif obj.tag == "junction":
                 junction = _Junction(obj.attrib)
                 self.junctions.append(junction)
+            elif obj.tag == "connection":
+                connection = _Connection(obj.attrib)
+                self.connections.append(connection)
 
     def _get_extents(self):
         lane_geoms = []
