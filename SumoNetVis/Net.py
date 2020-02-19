@@ -422,12 +422,15 @@ class Net:
         polygons = MultiPolygon(lane_geoms)
         return polygons.bounds
 
+    def _get_edge(self, edge_id):
+        for edge in self.edges:
+            if edge.id == edge_id:
+                return edge
+
     def _get_lane(self, lane_id):
         edge_id = "_".join(lane_id.split("_")[:-1])
         lane_num = int(lane_id.split("_")[-1])
-        for edge in self.edges:
-            if edge.id == edge_id:
-                return edge.get_lane(lane_num)
+        return self._get_edge(edge_id).get_lane(lane_num)
 
     def generate_obj_text(self):
         content = ""
