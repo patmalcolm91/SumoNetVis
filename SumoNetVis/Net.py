@@ -164,7 +164,7 @@ class _Lane:
             return False
         return vClass in self.allow
 
-    def _lane_type(self):
+    def lane_type(self):
         """
         Returns a string descriptor of the type of lane, based on vehicle permissions.
 
@@ -191,7 +191,7 @@ class _Lane:
 
         :return: lane color
         """
-        type = self._lane_type()
+        type = self.lane_type()
         return COLOR_SCHEME[type] if type in COLOR_SCHEME else COLOR_SCHEME["other"]
 
     def plot_alignment(self, ax):
@@ -246,7 +246,7 @@ class _Lane:
         h = 0.15 if self.allow == "pedestrian" else 0
         vertices, faces = self._get_3d_description(extrude_height=h)
         content += "o " + self.id
-        content += "\nusemtl " + self._lane_type()
+        content += "\nusemtl " + self.lane_type()
         content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
         content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
         content += "\n\n"
