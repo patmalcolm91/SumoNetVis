@@ -164,26 +164,35 @@ class _Lane:
             return False
         return vClass in self.allow
 
+    def _lane_type(self):
+        """
+        Returns a string descriptor of the type of lane, based on vehicle permissions.
+
+        :return: lane type
+        """
+        if self.allow == "pedestrian":
+            return "pedestrian"
+        if self.allow == "bicycle":
+            return "bicycle"
+        if self.allow == "ship":
+            return "ship"
+        if self.allow == "authority":
+            return "authority"
+        if self.disallow == "all":
+            return "none"
+        if not self.allows("passenger"):
+            return "no_passenger"
+        else:
+            return "other"
+
     def lane_color(self):
         """
         Returns the Sumo-GUI default lane color for this lane.
 
         :return: lane color
         """
-        if self.allow == "pedestrian":
-            return COLOR_SCHEME["pedestrian"]
-        if self.allow == "bicycle":
-            return COLOR_SCHEME["bicycle"]
-        if self.allow == "ship":
-            return COLOR_SCHEME["ship"]
-        if self.allow == "authority":
-            return COLOR_SCHEME["authority"]
-        if self.disallow == "all":
-            return COLOR_SCHEME["none"]
-        if "passenger" in self.disallow or "passenger" not in self.allow:
-            return COLOR_SCHEME["no_passenger"]
-        else:
-            return COLOR_SCHEME["other"]
+        type = self._lane_type()
+        return COLOR_SCHEME[type] if type in COLOR_SCHEME else COLOR_SCHEME["other"]
 
     def plot_alignment(self, ax):
         """
