@@ -398,6 +398,13 @@ class Net:
         polygons = MultiPolygon(lane_geoms)
         return polygons.bounds
 
+    def _get_lane(self, lane_id):
+        edge_id = "".join(lane_id.split("_")[:-1])
+        lane_num = int(lane_id.split("_")[-1])
+        for edge in self.edges:
+            if edge.id == edge_id:
+                return edge.get_lane(lane_num)
+
     def generate_obj_text(self):
         content = ""
         vertex_count = 0
