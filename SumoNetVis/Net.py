@@ -326,7 +326,7 @@ class _Lane:
 
 
 class _Connection:
-    def __init__(self, attrib):
+    def __init__(self, attrib, parent_net=None):
         self.from_edge = attrib["from"]
         self.to_edge = attrib["to"]
         self.from_lane = attrib["fromLane"]
@@ -334,12 +334,64 @@ class _Connection:
         self.via = attrib["via"] if "via" in attrib else None
         self.dir = attrib["dir"]
         self.state = attrib["state"]
+        self.parent_net = parent_net
 
         if "shape" in attrib:
             coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
             self.shape = LineString(coords)
         else:
             self.shape = None
+
+    def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
+        if type(self.parent_net) != Net:
+            raise ReferenceError("Valid reference to parent network required.")
+        # Get relevant lane objects
+        via_lane = self.parent_net._get_lane(self.via)  # type: _Lane
+        from_lane = self.parent_net._get_edge(self.from_edge).get_lane(int(self.from_lane))
+        to_lane = self.parent_net._get_edge(self.to_edge).get_lane(int(self.to_lane))
+        # Get lane edges
+        from_lane_left_edge = [list(c) for c in from_lane.alignment.parallel_offset(via_lane.width, side="left").coords]
+        from_lane_right_edge = [list(c) for c in from_lane.alignment.parallel_offset(via_lane.width, side="right").coords]
+        to_lane_left_edge = [list(c) for c in to_lane.alignment.parallel_offset(via_lane.width, side="left").coords]
+        to_lane_right_edge = [list(c) for c in to_lane.alignment.parallel_offset(via_lane.width, side="right").coords]
+        left_edge = [list(c) for c in via_lane.alignment.parallel_offset(via_lane.width, side="left").coords]
+        right_edge = [list(c) for c in via_lane.alignment.parallel_offset(via_lane.width, side="right").coords]
+        # Generate coordinates
+        left_coords = [from_lane_left_edge[-1]] + [left_edge][1:-1] + [to_lane_left_edge[0]]
+        right_coords = [from_lane_right_edge[-1]] + [right_edge][1:-1] + [to_lane_right_edge[0]]
+        left_coords.reverse()
+        boundary_coords = right_coords + left_coords + [right_coords[0]]
+        # Perform extrusion
+        top_vertices, bottom_vertices = [], []
+        for vertex in boundary_coords:
+            bottom_vertices.append([vertex[0], vertex[1], z])
+            top_vertices.append([vertex[0], vertex[1], z+extrude_height])
+        vertices, faces = [], []
+        vertices += top_vertices
+        edge_size = len(top_vertices)
+        faces += [[i+1 for i in range(edge_size)]]
+        if extrude_height != 0:
+            vertices += bottom_vertices
+            faces += [[i, i+1, i+edge_size+1, i+edge_size] for i in range(edge_size)]
+            if include_bottom_face:
+                faces += [[i+edge_size+1 for i in range(edge_size)]]
+        return vertices, faces
+
+    def generate_obj_text(self, vertex_count=0):
+        content = ""
+        via_lane = self.parent_net._get_lane(self.via)
+        from_lane = self.parent_net._get_edge(self.from_edge).get_lane(int(self.from_lane))
+        to_lane = self.parent_net._get_edge(self.to_edge).get_lane(int(self.to_lane))
+        h = 0.15 if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian" else 0
+        material = "pedestrian" if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian" else "connection"
+        vertices, faces = self._get_3d_description(extrude_height=h)
+        content += "o " + via_lane.id
+        content += "\nusemtl " + material
+        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
+        content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
+        content += "\n\n"
+        vertex_count += len(vertices)
+        return content, vertex_count
 
     def plot_alignment(self, ax):
         if self.shape:
@@ -411,7 +463,7 @@ class Net:
                 junction = _Junction(obj.attrib)
                 self.junctions.append(junction)
             elif obj.tag == "connection":
-                connection = _Connection(obj.attrib)
+                connection = _Connection(obj.attrib, self)
                 self.connections.append(connection)
 
     def _get_extents(self):
@@ -462,7 +514,7 @@ class Net:
                 from_lane = self._get_edge(connection.from_edge).get_lane(int(connection.from_lane))
                 to_lane = self._get_edge(connection.to_edge).get_lane(int(connection.to_lane))
                 if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian":
-                    lane_content, vertex_count = via_lane.generate_obj_text(vertex_count)
+                    lane_content, vertex_count = connection.generate_obj_text(vertex_count)
                     content += lane_content
         return content
 
