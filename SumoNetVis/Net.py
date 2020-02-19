@@ -340,6 +340,19 @@ class _Junction:
             if len(coords) > 2:
                 self.shape = Polygon(coords)
 
+    def generate_obj_text(self, vertex_count=0):
+        vertices_2d = self.shape.boundary.coords
+        vertices = [[vertex[0], vertex[1], 0] for vertex in vertices_2d]
+        face = [i+1 for i in range(len(vertices))]
+        content = ""
+        content += "o " + self.id
+        content += "\nusemtl junction"
+        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
+        content += "\nf " + " ".join([str(v + vertex_count) for v in face])
+        content += "\n\n"
+        vertex_count += len(vertices)
+        return content, vertex_count
+
     def plot(self, ax):
         """
         Plots the Junction.
@@ -392,6 +405,10 @@ class Net:
             for lane in edge.lanes:
                 lane_content, vertex_count = lane.generate_obj_text(vertex_count)
                 content += lane_content
+        for junction in self.junctions:
+            if junction.shape is not None:
+                junction_content, vertex_count = junction.generate_obj_text(vertex_count)
+                content += junction_content
         return content
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1):
