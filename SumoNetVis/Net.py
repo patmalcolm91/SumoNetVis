@@ -456,6 +456,14 @@ class Net:
             if junction.shape is not None:
                 junction_content, vertex_count = junction.generate_obj_text(vertex_count)
                 content += junction_content
+        for connection in self.connections:
+            if connection.via is not None:
+                via_lane = self._get_lane(connection.via)
+                from_lane = self._get_edge(connection.from_edge).get_lane(int(connection.from_lane))
+                to_lane = self._get_edge(connection.to_edge).get_lane(int(connection.to_lane))
+                if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian":
+                    lane_content, vertex_count = via_lane.generate_obj_text(vertex_count)
+                    content += lane_content
         return content
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1):
