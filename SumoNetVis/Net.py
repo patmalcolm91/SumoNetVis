@@ -347,6 +347,13 @@ class Net:
         polygons = MultiPolygon(lane_geoms)
         return polygons.bounds
 
+    def _get_lane(self, lane_id):
+        edge_id = "".join(lane_id.split("_")[:-1])
+        lane_num = int(lane_id.split("_")[-1])
+        for edge in self.edges:
+            if edge.id == edge_id:
+                return edge.get_lane(lane_num)
+
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1):
         """
         Plots the Net.
