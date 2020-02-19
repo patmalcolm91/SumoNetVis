@@ -164,26 +164,35 @@ class _Lane:
             return False
         return vClass in self.allow
 
+    def _lane_type(self):
+        """
+        Returns a string descriptor of the type of lane, based on vehicle permissions.
+
+        :return: lane type
+        """
+        if self.allow == "pedestrian":
+            return "pedestrian"
+        if self.allow == "bicycle":
+            return "bicycle"
+        if self.allow == "ship":
+            return "ship"
+        if self.allow == "authority":
+            return "authority"
+        if self.disallow == "all":
+            return "none"
+        if not self.allows("passenger"):
+            return "no_passenger"
+        else:
+            return "other"
+
     def lane_color(self):
         """
         Returns the Sumo-GUI default lane color for this lane.
 
         :return: lane color
         """
-        if self.allow == "pedestrian":
-            return COLOR_SCHEME["pedestrian"]
-        if self.allow == "bicycle":
-            return COLOR_SCHEME["bicycle"]
-        if self.allow == "ship":
-            return COLOR_SCHEME["ship"]
-        if self.allow == "authority":
-            return COLOR_SCHEME["authority"]
-        if self.disallow == "all":
-            return COLOR_SCHEME["none"]
-        if "passenger" in self.disallow or "passenger" not in self.allow:
-            return COLOR_SCHEME["no_passenger"]
-        else:
-            return COLOR_SCHEME["other"]
+        type = self._lane_type()
+        return COLOR_SCHEME[type] if type in COLOR_SCHEME else COLOR_SCHEME["other"]
 
     def plot_alignment(self, ax):
         """
@@ -214,6 +223,35 @@ class _Lane:
         :return: inverted lane index
         """
         return self.parentEdge.lane_count() - self.index - 1
+
+    def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
+        vertices_2d = self.shape.boundary.coords
+        top_vertices, bottom_vertices = [], []
+        for vertex in vertices_2d:
+            bottom_vertices.append([vertex[0], vertex[1], z])
+            top_vertices.append([vertex[0], vertex[1], z+extrude_height])
+        vertices, faces = [], []
+        vertices += top_vertices
+        edge_size = len(top_vertices)
+        faces += [[i+1 for i in range(edge_size)]]
+        if extrude_height != 0:
+            vertices += bottom_vertices
+            faces += [[i, i+1, i+edge_size+1, i+edge_size] for i in range(edge_size)]
+            if include_bottom_face:
+                faces += [[i+edge_size+1 for i in range(edge_size)]]
+        return vertices, faces
+
+    def generate_obj_text(self, vertex_count=0):
+        content = ""
+        h = 0.15 if self.allow == "pedestrian" else 0
+        vertices, faces = self._get_3d_description(extrude_height=h)
+        content += "o " + self.id
+        content += "\nusemtl " + self._lane_type()
+        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
+        content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
+        content += "\n\n"
+        vertex_count += len(vertices)
+        return content, vertex_count
 
     def _draw_lane_marking(self, ax, line, width, color, dashes):
         try:
@@ -304,6 +342,19 @@ class _Junction:
             if len(coords) > 2:
                 self.shape = Polygon(coords)
 
+    def generate_obj_text(self, vertex_count=0):
+        vertices_2d = self.shape.boundary.coords
+        vertices = [[vertex[0], vertex[1], 0] for vertex in vertices_2d]
+        face = [i+1 for i in range(len(vertices))]
+        content = ""
+        content += "o " + self.id
+        content += "\nusemtl junction"
+        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
+        content += "\nf " + " ".join([str(v + vertex_count) for v in face])
+        content += "\n\n"
+        vertex_count += len(vertices)
+        return content, vertex_count
+
     def plot(self, ax):
         """
         Plots the Junction.
@@ -353,6 +404,21 @@ class Net:
         for edge in self.edges:
             if edge.id == edge_id:
                 return edge.get_lane(lane_num)
+
+    def generate_obj_text(self):
+        content = ""
+        vertex_count = 0
+        for edge in self.edges:
+            if edge.function == "internal":
+                continue
+            for lane in edge.lanes:
+                lane_content, vertex_count = lane.generate_obj_text(vertex_count)
+                content += lane_content
+        for junction in self.junctions:
+            if junction.shape is not None:
+                junction_content, vertex_count = junction.generate_obj_text(vertex_count)
+                content += junction_content
+        return content
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1):
         """
