@@ -335,8 +335,6 @@ class _Junction:
         """
         self.id = attrib["id"]
         self.shape = None
-        self.incLanes = attrib["incLanes"].split(" ") if "incLanes" in attrib else []
-        self.intLanes = attrib["intLanes"].split(" ") if "intLanes" in attrib else []
         if "shape" in attrib:
             coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
             if len(coords) > 2:
@@ -397,13 +395,6 @@ class Net:
                 lane_geoms.append(lane.shape)
         polygons = MultiPolygon(lane_geoms)
         return polygons.bounds
-
-    def _get_lane(self, lane_id):
-        edge_id = "".join(lane_id.split("_")[:-1])
-        lane_num = int(lane_id.split("_")[-1])
-        for edge in self.edges:
-            if edge.id == edge_id:
-                return edge.get_lane(lane_num)
 
     def generate_obj_text(self):
         content = ""
