@@ -261,16 +261,10 @@ class _Lane:
         except NotImplementedError:
             print("Can't print center stripe for lane " + self.id)
 
-    def plot_lane_markings(self, ax):
-        """
-        Guesses and plots some simple lane markings.
-
-        :param ax: matplotlib Axes object
-        :return: None
-        :type ax: plt.Axes
-        """
+    def _guess_lane_markings(self):
+        markings = []
         if self.parentEdge.function == "internal" or self.allow == "ship" or self.allow == "rail":
-            return
+            return markings
         # US-style markings
         if LANE_MARKINGS_STYLE == USA_STYLE:
             lw = 0.1 * STRIPE_WIDTH_SCALE_FACTOR
@@ -278,7 +272,7 @@ class _Lane:
             if self.inverse_lane_index() == 0:
                 leftEdge = self.alignment.parallel_offset(self.width/2-lw, side="left")
                 color, dashes = "y", (100, 0)
-                self._draw_lane_marking(ax, leftEdge, lw, color, dashes)
+                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
             # Draw non-centerline markings
             else:
                 adjacent_lane = self.parentEdge.get_lane(self.index+1)
@@ -291,12 +285,12 @@ class _Lane:
                         dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
                     else:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
-                self._draw_lane_marking(ax, leftEdge, lw, color, dashes)
+                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
             # draw outer lane marking if necessary
             if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width/2, side="right")
                 color, dashes = "w", (100, 0)
-                self._draw_lane_marking(ax, rightEdge, lw, color, dashes)
+                markings.append({"line": rightEdge, "lw": lw, "color": color, "dashes": dashes})
         # European-style markings
         elif LANE_MARKINGS_STYLE == EUR_STYLE:
             lw = 0.1 * STRIPE_WIDTH_SCALE_FACTOR
@@ -304,7 +298,7 @@ class _Lane:
             if self.inverse_lane_index() == 0:
                 leftEdge = self.alignment.parallel_offset(self.width/2, side="left")
                 color, dashes = "w", (100, 0)
-                self._draw_lane_marking(ax, leftEdge, lw, color, dashes)
+                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
             # Draw non-centerline markings
             else:
                 adjacent_lane = self.parentEdge.get_lane(self.index + 1)
@@ -317,12 +311,24 @@ class _Lane:
                         dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
                     else:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
-                self._draw_lane_marking(ax, leftEdge, lw, color, dashes)
+                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
             # draw outer lane marking if necessary
             if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width / 2, side="right")
                 color, dashes = "w", (100, 0)
-                self._draw_lane_marking(ax, rightEdge, lw, color, dashes)
+                markings.append({"line": rightEdge, "lw": lw, "color": color, "dashes": dashes})
+        return markings
+
+    def plot_lane_markings(self, ax):
+        """
+        Guesses and plots some simple lane markings.
+
+        :param ax: matplotlib Axes object
+        :return: None
+        :type ax: plt.Axes
+        """
+        for marking in self._guess_lane_markings():
+            self._draw_lane_marking(ax, marking["line"], marking["lw"], marking["color"], marking["dashes"])
 
 
 class _Connection:
