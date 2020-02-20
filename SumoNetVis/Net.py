@@ -236,7 +236,7 @@ class _Lane:
         faces += [[i+1 for i in range(edge_size)]]
         if extrude_height != 0:
             vertices += bottom_vertices
-            faces += [[i, i+1, i+edge_size+1, i+edge_size] for i in range(edge_size)]
+            faces += [[i+1, i+2, i+edge_size+2, i+edge_size+1] for i in range(edge_size-1)]
             if include_bottom_face:
                 faces += [[i+edge_size+1 for i in range(edge_size)]]
         return vertices, faces
@@ -372,7 +372,7 @@ class _Connection:
         faces += [[i+1 for i in range(edge_size)]]
         if extrude_height != 0:
             vertices += bottom_vertices
-            faces += [[i, i+1, i+edge_size+1, i+edge_size] for i in range(edge_size)]
+            faces += [[i+1, i+2, i+edge_size+2, i+edge_size+1] for i in range(edge_size-1)]
             if include_bottom_face:
                 faces += [[i+edge_size+1 for i in range(edge_size)]]
         return vertices, faces
