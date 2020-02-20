@@ -362,8 +362,6 @@ class _Connection:
         right_coords = [from_lane_right_edge[0]] + right_edge[1:-1] + [to_lane_right_edge[-1]]
         left_coords.reverse()
         boundary_coords = right_coords + left_coords + [right_coords[0]]
-        # plt.plot(*zip(*boundary_coords))
-        # plt.show()
         return Polygon(boundary_coords)
 
     def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
