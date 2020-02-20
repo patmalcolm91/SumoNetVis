@@ -1,5 +1,5 @@
 # SumoNetVis
-A Python library for visualizing a Sumo network and trajectories with matplotlib.
+A Python library for visualizing a Sumo network and trajectories with matplotlib or as an OBJ file.
 
 ![Example plot of an intersection with trajectory colored by speed](Example_Plot.png)
 ![Example plot of a road network](Example_Plot_2.png)
@@ -8,6 +8,9 @@ A Python library for visualizing a Sumo network and trajectories with matplotlib
 
 Basic trajectory plotting from FCD outputs is built in, but it is also possible to plot custom data and graphics on
 top of the network with the full flexibility and power of matplotlib and other compatible libraries, such as seaborn.
+
+3D geometry for a network can be generated and saved as a Wavefront-OBJ file.
+![Example_rendering of OBJ export of an intersection](Example_OBJ_Export.png)
 
 ## Installation
 This package can be installed via pip with the command ```pip install SumoNetVis```.
@@ -18,7 +21,7 @@ import SumoNetVis
 ```
 
 ### Dependencies
-* shapely
+* shapely (>=1.7.0 for OBJ export)
 * matplotlib
 * numpy
 
@@ -74,6 +77,22 @@ when creating the animation.
 a = animation.FuncAnimation(fig, trajectories.plot_points, frames=trajectories.timestep_range(), repeat=False,
                             interval=1000*trajectories.timestep, fargs=(ax, True), blit=True)
 ```
+
+### OBJ Export
+
+The Wavefront-OBJ format is a text-based file format. The ```Net.generate_obj_text()``` method generates the contents
+of this file for the given Sumo network. In order to save an OBJ file, do the following:
+
+```python
+with open("model.obj", "w") as f:
+    f.write(net.generate_obj_text())
+```
+
+The axis configuration in the generated file is Y-Forward, Z-Up. Check these settings if the orientation of the model
+is incorrect when importing the file into a 3D modelling program.
+
+Each type of object is defined with a corresponding material (i.e. all bike lanes have the same material, all sidewalks,
+and so on), making it easy to quickly set the desired material properties before rendering.
 
 ## Documentation
 API documentation can be found [here](https://patmalcolm91.github.io/SumoNetVis/SumoNetVis.html)
