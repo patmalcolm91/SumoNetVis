@@ -342,25 +342,32 @@ class _Connection:
         else:
             self.shape = None
 
-    def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
+    def _generate_shape(self):
         if type(self.parent_net) != Net:
             raise ReferenceError("Valid reference to parent network required.")
         # Get relevant lane objects
         via_lane = self.parent_net._get_lane(self.via)  # type: _Lane
-        from_lane = self.parent_net._get_edge(self.from_edge).get_lane(int(self.from_lane))
-        to_lane = self.parent_net._get_edge(self.to_edge).get_lane(int(self.to_lane))
+        from_lane = self.parent_net._get_edge(self.from_edge).get_lane(int(self.from_lane))  # type: _Lane
+        to_lane = self.parent_net._get_edge(self.to_edge).get_lane(int(self.to_lane))  # type: _Lane
         # Get lane edges
-        from_lane_left_edge = [list(c) for c in from_lane.alignment.parallel_offset(via_lane.width, side="left").coords]
-        from_lane_right_edge = [list(c) for c in from_lane.alignment.parallel_offset(via_lane.width, side="right").coords]
-        to_lane_left_edge = [list(c) for c in to_lane.alignment.parallel_offset(via_lane.width, side="left").coords]
-        to_lane_right_edge = [list(c) for c in to_lane.alignment.parallel_offset(via_lane.width, side="right").coords]
-        left_edge = [list(c) for c in via_lane.alignment.parallel_offset(via_lane.width, side="left").coords]
-        right_edge = [list(c) for c in via_lane.alignment.parallel_offset(via_lane.width, side="right").coords]
+        from_lane_left_edge = [list(c) for c in from_lane.alignment.parallel_offset(from_lane.width/2, side="left").coords]
+        from_lane_right_edge = [list(c) for c in from_lane.alignment.parallel_offset(from_lane.width/2, side="right").coords]
+        to_lane_left_edge = [list(c) for c in to_lane.alignment.parallel_offset(to_lane.width/2, side="left").coords]
+        to_lane_right_edge = [list(c) for c in to_lane.alignment.parallel_offset(to_lane.width/2, side="right").coords]
+        left_edge = [list(c) for c in via_lane.alignment.parallel_offset(from_lane.width/2, side="left").coords]
+        right_edge = [list(c) for c in via_lane.alignment.parallel_offset(from_lane.width/2, side="right").coords]
+        right_edge.reverse()
         # Generate coordinates
-        left_coords = [from_lane_left_edge[-1]] + [left_edge][1:-1] + [to_lane_left_edge[0]]
-        right_coords = [from_lane_right_edge[0]] + [right_edge][1:-1] + [to_lane_right_edge[-1]]
+        left_coords = [from_lane_left_edge[-1]] + left_edge[1:-1] + [to_lane_left_edge[0]]
+        right_coords = [from_lane_right_edge[0]] + right_edge[1:-1] + [to_lane_right_edge[-1]]
         left_coords.reverse()
         boundary_coords = right_coords + left_coords + [right_coords[0]]
+        # plt.plot(*zip(*boundary_coords))
+        # plt.show()
+        return Polygon(boundary_coords)
+
+    def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
+        boundary_coords = self._generate_shape().boundary.coords
         # Perform extrusion
         top_vertices, bottom_vertices = [], []
         for vertex in boundary_coords:
