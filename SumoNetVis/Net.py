@@ -4,8 +4,10 @@ Main classes and functions for dealing with a Sumo network.
 
 import xml.etree.ElementTree as ET
 from shapely.geometry import *
+import shapely.ops as ops
 import matplotlib.patches
 import matplotlib.pyplot as plt
+import numpy as np
 from SumoNetVis import _Utils
 
 DEFAULT_LANE_WIDTH = 3.2
@@ -223,6 +225,36 @@ class _Lane:
         :return: inverted lane index
         """
         return self.parentEdge.lane_count() - self.index - 1
+
+    def _get_marking_3d_description(self, marking, z=0.001):
+        if marking["dashes"][1] == 0:  # if solid line
+            vertices_2d = marking["line"].buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat).boundary.coords
+            vertices = [[v[0], v[1], z] for v in vertices_2d]
+            faces = [[i+1 for i in range(len(vertices))]]
+            return vertices, faces
+        else:  # if dashed line
+            vertices, faces = [], []
+            dash_length, gap = marking["dashes"]
+            vertex_count = 0
+            for s in np.arange(0, marking["line"].length, dash_length+gap):
+                dash_segment = ops.substring(marking["line"], s, min(s+gap, marking["line"].length))
+                outline = dash_segment.buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat).boundary.coords
+                vertices += [[v[0], v[1], z] for v in outline]
+                faces.append([i+vertex_count+1 for i in range(len(outline))])
+                vertex_count += len(outline)
+            return vertices, faces
+
+    def generate_markings_obj_text(self, vertex_count=0):
+        content = ""
+        for i, marking in enumerate(self._guess_lane_markings()):
+            vertices, faces = self._get_marking_3d_description(marking)
+            content += "o " + self.id + "_marking" + str(i)
+            content += "\nusemtl marking_" + marking["color"]
+            content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
+            content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
+            content += "\n\n"
+            vertex_count += len(vertices)
+        return content, vertex_count
 
     def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
         vertices_2d = self.shape.boundary.coords
@@ -515,6 +547,8 @@ class Net:
             for lane in edge.lanes:
                 lane_content, vertex_count = lane.generate_obj_text(vertex_count)
                 content += lane_content
+                markings_content, vertex_count = lane.generate_markings_obj_text(vertex_count=vertex_count)
+                content += markings_content
         for junction in self.junctions:
             if junction.shape is not None:
                 junction_content, vertex_count = junction.generate_obj_text(vertex_count)
