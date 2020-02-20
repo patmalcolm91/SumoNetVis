@@ -237,7 +237,7 @@ class _Lane:
             dash_length, gap = marking["dashes"]
             vertex_count = 0
             for s in np.arange(0, marking["line"].length, dash_length+gap):
-                dash_segment = ops.substring(marking["line"], s, min(s+gap, marking["line"].length))
+                dash_segment = ops.substring(marking["line"], s, min(s+dash_length, marking["line"].length))
                 outline = dash_segment.buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat).boundary.coords
                 vertices += [[v[0], v[1], z] for v in outline]
                 faces.append([i+vertex_count+1 for i in range(len(outline))])
