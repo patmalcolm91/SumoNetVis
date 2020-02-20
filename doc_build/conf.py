@@ -16,7 +16,7 @@
 import os
 import sys
 # sys.path.insert(0, os.path.abspath('../SumoNetVis'))
-sys.path.append(os.path.join(os.path.dirname(__name__), '../SumoNetVis'))
+sys.path.append(os.path.join(os.path.dirname(__name__), '..'))
 sys.setrecursionlimit(1500)
 
 # -- Project information -----------------------------------------------------
@@ -26,7 +26,7 @@ copyright = '2020, Patrick Malcolm'
 author = 'Patrick Malcolm'
 
 # The full version, including alpha/beta/rc tags
-release = '1.2.0'
+release = '1.3.0'
 
 
 # -- General configuration ---------------------------------------------------

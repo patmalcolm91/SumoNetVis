@@ -8,15 +8,15 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 setup(
   name='SumoNetVis',
   packages=['SumoNetVis'],
-  version='1.2.0',
+  version='1.3.0',
   license='MIT',
-  description='A python library to render Sumo network files and trajectories with matplotlib.',
+  description='A python library to render Sumo network files and trajectories with matplotlib or as an OBJ file.',
   long_description=long_description,
   long_description_content_type='text/markdown',
   author='Patrick Malcolm',
   author_email='patmalcolm91@gmail.com',
   url='https://github.com/patmalcolm91/SumoNetVis',
-  download_url='https://github.com/patmalcolm91/SumoNetVis/archive/v1.2.0.tar.gz',
+  download_url='https://github.com/patmalcolm91/SumoNetVis/archive/v1.3.0.tar.gz',
   keywords=['sumo', 'network', 'visualize', 'plot', 'matplotlib', 'traffic'],
   install_requires=[
           'shapely',
