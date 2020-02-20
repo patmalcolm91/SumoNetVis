@@ -358,7 +358,7 @@ class _Connection:
         right_edge = [list(c) for c in via_lane.alignment.parallel_offset(via_lane.width, side="right").coords]
         # Generate coordinates
         left_coords = [from_lane_left_edge[-1]] + [left_edge][1:-1] + [to_lane_left_edge[0]]
-        right_coords = [from_lane_right_edge[-1]] + [right_edge][1:-1] + [to_lane_right_edge[0]]
+        right_coords = [from_lane_right_edge[0]] + [right_edge][1:-1] + [to_lane_right_edge[-1]]
         left_coords.reverse()
         boundary_coords = right_coords + left_coords + [right_coords[0]]
         # Perform extrusion
