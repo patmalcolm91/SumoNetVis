@@ -237,6 +237,7 @@ class _Lane:
             dash_length, gap = marking["dashes"]
             vertex_count = 0
             for s in np.arange(0, marking["line"].length, dash_length+gap):
+                assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for OBJ export of dashed lines."
                 dash_segment = ops.substring(marking["line"], s, min(s+dash_length, marking["line"].length))
                 outline = dash_segment.buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat).boundary.coords
                 vertices += [[v[0], v[1], z] for v in outline]
