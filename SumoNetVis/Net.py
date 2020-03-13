@@ -325,6 +325,8 @@ class _Lane:
             ax.add_line(line)
         except NotImplementedError:
             print("Can't print center stripe for lane " + self.id)
+        except ValueError:
+            print("Generated lane marking geometry is empty for lane " + self.id)
 
     def _guess_lane_markings(self):
         """
