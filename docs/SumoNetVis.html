@@ -4,15 +4,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>SumoNetVis package &#8212; SumoNetVis 1.3.0 documentation</title>
+    <title>SumoNetVis package &#8212; SumoNetVis 1.3.1 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -26,7 +26,7 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.3.1 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -42,19 +42,11 @@
 <p>Main classes and functions for dealing with a Sumo network.</p>
 <dl class="class">
 <dt id="SumoNetVis.Net.Net">
-<em class="property">class </em><code class="descclassname">SumoNetVis.Net.</code><code class="descname">Net</code><span class="sig-paren">(</span><em>file</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.Net" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">SumoNetVis.Net.</code><code class="sig-name descname">Net</code><span class="sig-paren">(</span><em class="sig-param">file</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.Net" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="method">
-<dt id="SumoNetVis.Net.Net..buildinfo
-genindex.html
-index.html
-modules.html
-objects.inv
-py-modindex.html
-search.html
-searchindex.js
-SumoNetVis.html_obj_text">
-<code class="descname">generate_obj_text</code><span class="sig-paren">(</span><em>style=None</em>, <em>stripe_width_scale=1</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.Net.generate_obj_text" title="Permalink to this definition">¶</a></dt>
+<dt id="SumoNetVis.Net.Net.generate_obj_text">
+<code class="sig-name descname">generate_obj_text</code><span class="sig-paren">(</span><em class="sig-param">style=None</em>, <em class="sig-param">stripe_width_scale=1</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.Net.generate_obj_text" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates the contents for a Wavefront-OBJ file which represents the network as a 3D model.</p>
 <p>This text can be saved as text to a file with the <a href="#id1"><span class="problematic" id="id2">*</span></a>.obj extension and then imported into a 3D modelling program.
 The axis configuration in the generated file is Y-Forward, Z-Up.</p>
@@ -73,8 +65,8 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 
 <dl class="method">
 <dt id="SumoNetVis.Net.Net.plot">
-<code class="descname">plot</code><span class="sig-paren">(</span><em>ax=None</em>, <em>clip_to_limits=False</em>, <em>zoom_to_extents=True</em>, <em>style=None</em>, <em>stripe_width_scale=1</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.Net.plot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plots the Net.</p>
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">clip_to_limits=False</em>, <em class="sig-param">zoom_to_extents=True</em>, <em class="sig-param">style=None</em>, <em class="sig-param">stripe_width_scale=1</em>, <em class="sig-param">lane_kwargs=None</em>, <em class="sig-param">lane_marking_kwargs=None</em>, <em class="sig-param">junction_kwargs=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.Net.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the Net. Kwargs are passed to the plotting functions, with object-specific kwargs overriding general ones.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -83,6 +75,9 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 <li><p><strong>zoom_to_extents</strong> (<em>bool</em>) – if True, window will be set to the network extents. Ignored if clip_to_limits is True</p></li>
 <li><p><strong>style</strong> (<em>str</em>) – lane marking style to use for plotting (“USA” or “EUR”). Defaults to last used or “EUR”.</p></li>
 <li><p><strong>stripe_width_scale</strong> (<em>float</em>) – scale factor for lane striping widths</p></li>
+<li><p><strong>lane_kwargs</strong> – kwargs to pass to the lane plotting function (matplotlib.patches.Polygon())</p></li>
+<li><p><strong>lane_marking_kwargs</strong> – kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())</p></li>
+<li><p><strong>junction_kwargs</strong> – kwargs to pass to the junction plotting function (matplotlib.patches.Polygon())</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -95,7 +90,7 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 
 <dl class="function">
 <dt id="SumoNetVis.Net.set_stripe_width_scale">
-<code class="descclassname">SumoNetVis.Net.</code><code class="descname">set_stripe_width_scale</code><span class="sig-paren">(</span><em>factor=1</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.set_stripe_width_scale" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">SumoNetVis.Net.</code><code class="sig-name descname">set_stripe_width_scale</code><span class="sig-paren">(</span><em class="sig-param">factor=1</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.set_stripe_width_scale" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the lane striping width scale factor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -109,7 +104,7 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 
 <dl class="function">
 <dt id="SumoNetVis.Net.set_style">
-<code class="descclassname">SumoNetVis.Net.</code><code class="descname">set_style</code><span class="sig-paren">(</span><em>style='EUR'</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.set_style" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">SumoNetVis.Net.</code><code class="sig-name descname">set_style</code><span class="sig-paren">(</span><em class="sig-param">style='EUR'</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.set_style" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the lane marking style to either USA or EUR.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -127,11 +122,11 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 <p>Tools for plotting trajectories.</p>
 <dl class="class">
 <dt id="SumoNetVis.Trajectory.Trajectories">
-<em class="property">class </em><code class="descclassname">SumoNetVis.Trajectory.</code><code class="descname">Trajectories</code><span class="sig-paren">(</span><em>file=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectories" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">SumoNetVis.Trajectory.</code><code class="sig-name descname">Trajectories</code><span class="sig-paren">(</span><em class="sig-param">file=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectories" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="method">
 <dt id="SumoNetVis.Trajectory.Trajectories.plot">
-<code class="descname">plot</code><span class="sig-paren">(</span><em>ax=None</em>, <em>start_time=0</em>, <em>end_time=inf</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectories.plot" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">start_time=0</em>, <em class="sig-param">end_time=inf</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectories.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots all of the trajectories contained in this object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -150,7 +145,7 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 
 <dl class="method">
 <dt id="SumoNetVis.Trajectory.Trajectories.plot_points">
-<code class="descname">plot_points</code><span class="sig-paren">(</span><em>time</em>, <em>ax=None</em>, <em>animate_color=False</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectories.plot_points" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot_points</code><span class="sig-paren">(</span><em class="sig-param">time</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">animate_color=False</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectories.plot_points" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the position of each vehicle at the specified time as a point.
 The style for each point is controlled by each Trajectory’s point_plot_kwargs attribute.</p>
 <dl class="field-list simple">
@@ -169,7 +164,7 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 
 <dl class="method">
 <dt id="SumoNetVis.Trajectory.Trajectories.read_from_fcd">
-<code class="descname">read_from_fcd</code><span class="sig-paren">(</span><em>file</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectories.read_from_fcd" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">read_from_fcd</code><span class="sig-paren">(</span><em class="sig-param">file</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectories.read_from_fcd" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reads trajectories from Sumo floating car data (fcd) output file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -183,7 +178,7 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 
 <dl class="method">
 <dt id="SumoNetVis.Trajectory.Trajectories.timestep_range">
-<code class="descname">timestep_range</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectories.timestep_range" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">timestep_range</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectories.timestep_range" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a numpy ndarray consisting of every simulation time</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -196,11 +191,11 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 
 <dl class="class">
 <dt id="SumoNetVis.Trajectory.Trajectory">
-<em class="property">class </em><code class="descclassname">SumoNetVis.Trajectory.</code><code class="descname">Trajectory</code><span class="sig-paren">(</span><em>id</em>, <em>type</em>, <em>time=None</em>, <em>x=None</em>, <em>y=None</em>, <em>speed=None</em>, <em>angle=None</em>, <em>lane=None</em>, <em>colors=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">SumoNetVis.Trajectory.</code><code class="sig-name descname">Trajectory</code><span class="sig-paren">(</span><em class="sig-param">id</em>, <em class="sig-param">type</em>, <em class="sig-param">time=None</em>, <em class="sig-param">x=None</em>, <em class="sig-param">y=None</em>, <em class="sig-param">speed=None</em>, <em class="sig-param">angle=None</em>, <em class="sig-param">lane=None</em>, <em class="sig-param">colors=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="method">
 <dt id="SumoNetVis.Trajectory.Trajectory.assign_colors_angle">
-<code class="descname">assign_colors_angle</code><span class="sig-paren">(</span><em>cmap=None</em>, <em>angle_mode='deg'</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory.assign_colors_angle" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">assign_colors_angle</code><span class="sig-paren">(</span><em class="sig-param">cmap=None</em>, <em class="sig-param">angle_mode='deg'</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory.assign_colors_angle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assigns colors to trajectory points based on the angle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -217,7 +212,7 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 
 <dl class="method">
 <dt id="SumoNetVis.Trajectory.Trajectory.assign_colors_constant">
-<code class="descname">assign_colors_constant</code><span class="sig-paren">(</span><em>color</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory.assign_colors_constant" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">assign_colors_constant</code><span class="sig-paren">(</span><em class="sig-param">color</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory.assign_colors_constant" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assigns a constant color to the trajectory</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -231,7 +226,7 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 
 <dl class="method">
 <dt id="SumoNetVis.Trajectory.Trajectory.assign_colors_lane">
-<code class="descname">assign_colors_lane</code><span class="sig-paren">(</span><em>cmap=None</em>, <em>color_dict=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory.assign_colors_lane" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">assign_colors_lane</code><span class="sig-paren">(</span><em class="sig-param">cmap=None</em>, <em class="sig-param">color_dict=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory.assign_colors_lane" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assigns colors to the trajectory points based on the lane value</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -248,7 +243,7 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 
 <dl class="method">
 <dt id="SumoNetVis.Trajectory.Trajectory.assign_colors_speed">
-<code class="descname">assign_colors_speed</code><span class="sig-paren">(</span><em>cmap=None</em>, <em>min_speed=0</em>, <em>max_speed=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory.assign_colors_speed" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">assign_colors_speed</code><span class="sig-paren">(</span><em class="sig-param">cmap=None</em>, <em class="sig-param">min_speed=0</em>, <em class="sig-param">max_speed=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory.assign_colors_speed" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assigns colors to trajectory points based on the speed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -266,7 +261,7 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 
 <dl class="method">
 <dt id="SumoNetVis.Trajectory.Trajectory.plot">
-<code class="descname">plot</code><span class="sig-paren">(</span><em>ax=None</em>, <em>start_time=0</em>, <em>end_time=inf</em>, <em>zoom_to_extents=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory.plot" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">start_time=0</em>, <em class="sig-param">end_time=inf</em>, <em class="sig-param">zoom_to_extents=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.Trajectory.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the trajectory</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -312,15 +307,15 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -334,12 +329,12 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.3.1 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Patrick Malcolm.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.0.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
     </div>
   </body>
 </html>
