@@ -42,12 +42,23 @@ trajectories["vehicle_id"].plot()
 plt.show()
 ```
 
-the Net.plot() function takes the following optional parameters:
+the ```Net.plot()``` function takes the following optional parameters:
 * ax: matplotlib Axes object (defaults to currently active Axes)
 * clip_to_limits: if True, only objects visible in the current view extents will be drawn
 * zoom_to_extents: auto-zoom to Net extents (defaults to True)
 * style: lane marking style to use ("USA" or "EUR")
 * stripe_width_scale: scale factor for lane marking widths (defaults to 1)
+* lane_kwargs: dict of kwargs to pass to the lane plotting function (matplotlib.patches.Polygon()), for example alpha
+* lane_marking_kwargs: dict of kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
+* junction_kwargs: dict of kwargs to pass to the junction plotting function (matplotlib.patches.Polygon())
+
+Any kwargs passed directly to ```Net.plot()``` will be passed to each of the plotting functions. These will, however,
+be overridden by any object-type-specific kwargs (```lane_kwargs```, etc.).
+
+To plot all junctions at 50% opacity and all other objects at 80% opacity, for example, one can use:
+```python
+net.plot(junction_kwargs={"alpha": 0.5}, alpha=0.8)
+```
 
 ### Animation
 Instead of visualizing Trajectories as lines, an animation can be generated using the ```matplotlib.animation``` module.

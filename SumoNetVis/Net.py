@@ -109,17 +109,24 @@ class _Edge:
                 return True
         return False
 
-    def plot(self, ax):
+    def plot(self, ax, lane_kwargs=None, lane_marking_kwargs=None, **kwargs):
         """
-        Plots the lane
+        Plots the lane.
+        The lane_kwargs and lane_markings_kwargs override the general kwargs for their respective functions.
 
         :param ax: matplotlib Axes object
+        :param lane_kwargs: kwargs to pass to the lane plotting function (matplotlib.patches.Polygon())
+        :param lane_marking_kwargs: kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
         :return: None
         :type ax: plt.Axes
         """
+        if lane_kwargs is None:
+            lane_kwargs = dict()
+        if lane_marking_kwargs is None:
+            lane_marking_kwargs = dict()
         for lane in self.lanes:
-            lane.plot_shape(ax)
-            lane.plot_lane_markings(ax)
+            lane.plot_shape(ax, **{**kwargs, **lane_kwargs})
+            lane.plot_lane_markings(ax, **{**kwargs, **lane_marking_kwargs})
 
 
 class _Lane:
@@ -207,7 +214,7 @@ class _Lane:
         x, y = zip(*self.alignment.coords)
         ax.plot(x, y)
 
-    def plot_shape(self, ax):
+    def plot_shape(self, ax, **kwargs):
         """
         Plots the entire shape of the lane
 
@@ -215,7 +222,7 @@ class _Lane:
         :return: None
         :type ax: plt.Axes
         """
-        poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=self.color)
+        poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=self.color, **kwargs)
         ax.add_patch(poly)
 
     def inverse_lane_index(self):
@@ -318,10 +325,10 @@ class _Lane:
         vertex_count += len(vertices)
         return content, vertex_count
 
-    def _draw_lane_marking(self, ax, line, width, color, dashes):
+    def _draw_lane_marking(self, ax, line, width, color, dashes, **kwargs):
         try:
             x, y = zip(*line.coords)
-            line = _Utils.LineDataUnits(x, y, linewidth=width, color=color, dashes=dashes)
+            line = _Utils.LineDataUnits(x, y, linewidth=width, color=color, dashes=dashes, **kwargs)
             ax.add_line(line)
         except NotImplementedError:
             print("Can't print center stripe for lane " + self.id)
@@ -391,7 +398,7 @@ class _Lane:
                 markings.append({"line": rightEdge, "lw": lw, "color": color, "dashes": dashes})
         return markings
 
-    def plot_lane_markings(self, ax):
+    def plot_lane_markings(self, ax, **kwargs):
         """
         Guesses and plots some simple lane markings.
 
@@ -400,7 +407,7 @@ class _Lane:
         :type ax: plt.Axes
         """
         for marking in self._guess_lane_markings():
-            self._draw_lane_marking(ax, marking["line"], marking["lw"], marking["color"], marking["dashes"])
+            self._draw_lane_marking(ax, marking["line"], marking["lw"], marking["color"], marking["dashes"], **kwargs)
 
 
 class _Connection:
@@ -557,7 +564,7 @@ class _Junction:
         vertex_count += len(vertices)
         return content, vertex_count
 
-    def plot(self, ax):
+    def plot(self, ax, **kwargs):
         """
         Plots the Junction.
 
@@ -566,7 +573,7 @@ class _Junction:
         :type ax: plt.Axes
         """
         if self.shape is not None:
-            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=COLOR_SCHEME["junction"])
+            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=COLOR_SCHEME["junction"], **kwargs)
             ax.add_patch(poly)
 
 
@@ -654,15 +661,19 @@ class Net:
                     content += lane_content
         return content
 
-    def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1):
+    def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
+             lane_kwargs=None, lane_marking_kwargs=None, junction_kwargs=None, **kwargs):
         """
-        Plots the Net.
+        Plots the Net. Kwargs are passed to the plotting functions, with object-specific kwargs overriding general ones.
 
         :param ax: matplotlib Axes object. Defaults to current axes.
         :param clip_to_limits: if True, only objects in the current view will be drawn. Speeds up saving of animations.
         :param zoom_to_extents: if True, window will be set to the network extents. Ignored if clip_to_limits is True
         :param style: lane marking style to use for plotting ("USA" or "EUR"). Defaults to last used or "EUR".
         :param stripe_width_scale: scale factor for lane striping widths
+        :param lane_kwargs: kwargs to pass to the lane plotting function (matplotlib.patches.Polygon())
+        :param lane_marking_kwargs: kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
+        :param junction_kwargs: kwargs to pass to the junction plotting function (matplotlib.patches.Polygon())
         :return: None
         :type ax: plt.Axes
         :type clip_to_limits: bool
@@ -675,6 +686,8 @@ class Net:
         set_stripe_width_scale(stripe_width_scale)
         if ax is None:
             ax = plt.gca()
+        if junction_kwargs is None:
+            junction_kwargs = dict()
         if zoom_to_extents and not clip_to_limits:
             x_min, y_min, x_max, y_max = self._get_extents()
             ax.set_xlim(x_min, x_max)
@@ -686,10 +699,10 @@ class Net:
         window = Polygon(bounds)
         for edge in self.edges:
             if edge.function != "internal" and (not clip_to_limits or edge.intersects(window)):
-                edge.plot(ax)
+                edge.plot(ax, lane_kwargs, lane_marking_kwargs, **kwargs)
         for junction in self.junctions:
             if not clip_to_limits or (junction.shape is not None and junction.shape.intersects(window)):
-                junction.plot(ax)
+                junction.plot(ax, **{**kwargs, **junction_kwargs})
 
 
 if __name__ == "__main__":
