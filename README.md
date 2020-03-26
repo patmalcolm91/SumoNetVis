@@ -60,6 +60,14 @@ To plot all junctions at 50% opacity and all other objects at 80% opacity, for e
 net.plot(junction_kwargs={"alpha": 0.5}, alpha=0.8)
 ```
 
+The color scheme of junctions and various lane types can be customized by modifying entries in the global variable
+```COLOR_SCHEME```. For example, to plot bike lanes as dark green instead of dark red, do the following:
+```python
+SumoNetVis.COLOR_SCHEME["bicycle"] = "#006600"
+```
+Any color specification supported by matplotlib can be given here, such as RGB and RGBA hex strings and float tuples, as
+well as color names and abbreviations. See the matplotlib documentation for more detailed information.
+
 ### Animation
 Instead of visualizing Trajectories as lines, an animation can be generated using the ```matplotlib.animation``` module.
 
