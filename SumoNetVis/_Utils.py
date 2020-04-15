@@ -36,6 +36,7 @@ class LineDataUnits(Line2D):
         super().__init__(*args, **kwargs)
         self._lw_data = _lw_data
         self._dashes_data = _dashes_data
+        self._dashOffset = 0
 
     def _get_lw(self):
         if self.axes is not None:

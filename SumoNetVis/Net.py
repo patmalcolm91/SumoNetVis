@@ -222,6 +222,8 @@ class _Lane:
         :return: None
         :type ax: plt.Axes
         """
+        if "lw" not in kwargs and "linewidth" not in kwargs:
+            kwargs["lw"] = 0
         poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=self.color, **kwargs)
         ax.add_patch(poly)
 
@@ -573,6 +575,8 @@ class _Junction:
         :type ax: plt.Axes
         """
         if self.shape is not None:
+            if "lw" not in kwargs and "linewidth" not in kwargs:
+                kwargs["lw"] = 0
             poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=COLOR_SCHEME["junction"], **kwargs)
             ax.add_patch(poly)
 
