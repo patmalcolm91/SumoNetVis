@@ -694,6 +694,10 @@ class Net:
             ax = plt.gca()
         if junction_kwargs is None:
             junction_kwargs = dict()
+        if lane_kwargs is None:
+            lane_kwargs = dict()
+        if lane_marking_kwargs is None:
+            lane_marking_kwargs = dict()
         if zoom_to_extents and not clip_to_limits:
             x_min, y_min, x_max, y_max = self._get_extents()
             ax.set_xlim(x_min, x_max)
@@ -705,10 +709,10 @@ class Net:
         window = Polygon(bounds)
         for edge in self.edges:
             if edge.function != "internal" and (not clip_to_limits or edge.intersects(window)):
-                edge.plot(ax, lane_kwargs, lane_marking_kwargs, **kwargs)
+                edge.plot(ax, {"zorder": -100, **lane_kwargs}, {"zorder": -90, **lane_marking_kwargs}, **kwargs)
         for junction in self.junctions:
             if not clip_to_limits or (junction.shape is not None and junction.shape.intersects(window)):
-                junction.plot(ax, **{**kwargs, **junction_kwargs})
+                junction.plot(ax, **{"zorder": -110, **kwargs, **junction_kwargs})
 
 
 if __name__ == "__main__":
