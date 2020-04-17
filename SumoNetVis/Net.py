@@ -595,6 +595,8 @@ class Net:
         net = ET.parse(file).getroot()
         for obj in net:
             if obj.tag == "edge":
+                if "function" in obj.attrib and obj.attrib["function"] == "walkingarea":
+                    continue
                 edge = _Edge(obj.attrib)
                 for laneObj in obj:
                     lane = _Lane(laneObj.attrib)
