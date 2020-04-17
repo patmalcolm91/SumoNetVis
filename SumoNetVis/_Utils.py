@@ -34,6 +34,7 @@ class LineDataUnits(Line2D):
         _lw_data = kwargs.pop("linewidth", 1)
         _dashes_data = kwargs.pop("dashes", (1,))
         super().__init__(*args, **kwargs)
+        self.set_linestyle("--")
         self._lw_data = _lw_data
         self._dashes_data = _dashes_data
         self._dashOffset = 0
@@ -53,7 +54,8 @@ class LineDataUnits(Line2D):
         if self.axes is not None:
             ppd = 72./self.axes.figure.dpi
             trans = self.axes.transData.transform
-            return tuple([((trans((1, dash_data))-trans((0, 0)))*ppd)[1] for dash_data in self._dashes_data])
+            dpu = (trans((1, 1)) - trans((0, 0)))[0]
+            return tuple([u*dpu*ppd for u in self._dashes_data])
         else:
             return tuple((1, 0))
 
