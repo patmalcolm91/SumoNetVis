@@ -247,9 +247,16 @@ class _Lane:
         :type z: float
         """
         if marking["dashes"][1] == 0:  # if solid line
-            vertices_2d = marking["line"].buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat).boundary.coords
-            vertices = [[v[0], v[1], z] for v in vertices_2d]
-            faces = [[i+1 for i in range(len(vertices))]]
+            buffer = marking["line"].buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat)
+            if buffer.geometryType() == "MultiPolygon":
+                outlines = [polygon.boundary.coords for polygon in buffer]
+            elif buffer.geometryType() == "Polygon":
+                outlines = [buffer.boundary.coords]
+            else:
+                raise TypeError("Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
+            for vertices_2d in outlines:
+                vertices = [[v[0], v[1], z] for v in vertices_2d]
+                faces = [[i+1 for i in range(len(vertices))]]
             return vertices, faces
         else:  # if dashed line
             vertices, faces = [], []
@@ -258,10 +265,18 @@ class _Lane:
             for s in np.arange(0, marking["line"].length, dash_length+gap):
                 assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for OBJ export of dashed lines."
                 dash_segment = ops.substring(marking["line"], s, min(s+dash_length, marking["line"].length))
-                outline = dash_segment.buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat).boundary.coords
-                vertices += [[v[0], v[1], z] for v in outline]
-                faces.append([i+vertex_count+1 for i in range(len(outline))])
-                vertex_count += len(outline)
+                buffer = dash_segment.buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat)
+                if buffer.geometryType() == "MultiPolygon":
+                    outlines = [polygon.boundary.coords for polygon in buffer]
+                elif buffer.geometryType() == "Polygon":
+                    outlines = [buffer.boundary.coords]
+                else:
+                    raise TypeError(
+                        "Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
+                for outline in outlines:
+                    vertices += [[v[0], v[1], z] for v in outline]
+                    faces.append([i+vertex_count+1 for i in range(len(outline))])
+                    vertex_count += len(outline)
             return vertices, faces
 
     def generate_markings_obj_text(self, vertex_count=0):
