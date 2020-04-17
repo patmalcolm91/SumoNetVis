@@ -20,6 +20,7 @@ COLOR_SCHEME = {
     "authority": "#FF0000",
     "none": "#FFFFFF",
     "no_passenger": "#5C5C5C",
+    "crosswalk": "#00000000",
     "other": "#000000"
 }
 USA_STYLE = "USA"
@@ -62,7 +63,7 @@ class _Edge:
         :type attrib: dict
         """
         self.id = attrib["id"]
-        self.function = attrib["function"] if "function" in attrib else ""
+        self.function = attrib["function"] if "function" in attrib else "normal"
         self.lanes = []
 
     def append_lane(self, lane):
@@ -152,7 +153,6 @@ class _Lane:
         coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
         self.alignment = LineString(coords)
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
-        self.color = self.lane_color()
         self.parentEdge = None
 
     def allows(self, vClass):
@@ -180,7 +180,10 @@ class _Lane:
         :return: lane type
         """
         if self.allow == "pedestrian":
-            return "pedestrian"
+            if self.parentEdge is not None and self.parentEdge.function == "crossing":
+                return "crosswalk"
+            else:
+                return "pedestrian"
         if self.allow == "bicycle":
             return "bicycle"
         if self.allow == "ship":
@@ -224,7 +227,7 @@ class _Lane:
         """
         if "lw" not in kwargs and "linewidth" not in kwargs:
             kwargs["lw"] = 0
-        poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=self.color, **kwargs)
+        poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=self.lane_color(), **kwargs)
         ax.add_patch(poly)
 
     def inverse_lane_index(self):
@@ -244,9 +247,16 @@ class _Lane:
         :type z: float
         """
         if marking["dashes"][1] == 0:  # if solid line
-            vertices_2d = marking["line"].buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat).boundary.coords
-            vertices = [[v[0], v[1], z] for v in vertices_2d]
-            faces = [[i+1 for i in range(len(vertices))]]
+            buffer = marking["line"].buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat)
+            if buffer.geometryType() == "MultiPolygon":
+                outlines = [polygon.boundary.coords for polygon in buffer]
+            elif buffer.geometryType() == "Polygon":
+                outlines = [buffer.boundary.coords]
+            else:
+                raise TypeError("Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
+            for vertices_2d in outlines:
+                vertices = [[v[0], v[1], z] for v in vertices_2d]
+                faces = [[i+1 for i in range(len(vertices))]]
             return vertices, faces
         else:  # if dashed line
             vertices, faces = [], []
@@ -255,10 +265,18 @@ class _Lane:
             for s in np.arange(0, marking["line"].length, dash_length+gap):
                 assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for OBJ export of dashed lines."
                 dash_segment = ops.substring(marking["line"], s, min(s+dash_length, marking["line"].length))
-                outline = dash_segment.buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat).boundary.coords
-                vertices += [[v[0], v[1], z] for v in outline]
-                faces.append([i+vertex_count+1 for i in range(len(outline))])
-                vertex_count += len(outline)
+                buffer = dash_segment.buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat)
+                if buffer.geometryType() == "MultiPolygon":
+                    outlines = [polygon.boundary.coords for polygon in buffer]
+                elif buffer.geometryType() == "Polygon":
+                    outlines = [buffer.boundary.coords]
+                else:
+                    raise TypeError(
+                        "Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
+                for outline in outlines:
+                    vertices += [[v[0], v[1], z] for v in outline]
+                    faces.append([i+vertex_count+1 for i in range(len(outline))])
+                    vertex_count += len(outline)
             return vertices, faces
 
     def generate_markings_obj_text(self, vertex_count=0):
@@ -345,6 +363,10 @@ class _Lane:
         """
         markings = []
         if self.parentEdge.function == "internal" or self.allow == "ship" or self.allow == "rail":
+            return markings
+        if self.parentEdge.function == "crossing":
+            color, dashes = "w", (0.5, 0.5)
+            markings.append({"line": self.alignment, "lw": self.width, "color": color, "dashes": dashes})
             return markings
         # US-style markings
         if LANE_MARKINGS_STYLE == USA_STYLE:
@@ -595,6 +617,8 @@ class Net:
         net = ET.parse(file).getroot()
         for obj in net:
             if obj.tag == "edge":
+                if "function" in obj.attrib and obj.attrib["function"] == "walkingarea":
+                    continue
                 edge = _Edge(obj.attrib)
                 for laneObj in obj:
                     lane = _Lane(laneObj.attrib)
@@ -647,8 +671,9 @@ class Net:
             if edge.function == "internal":
                 continue
             for lane in edge.lanes:
-                lane_content, vertex_count = lane.generate_obj_text(vertex_count)
-                content += lane_content
+                if edge.function not in ["crossing", "walkingarea"]:
+                    lane_content, vertex_count = lane.generate_obj_text(vertex_count)
+                    content += lane_content
                 markings_content, vertex_count = lane.generate_markings_obj_text(vertex_count=vertex_count)
                 content += markings_content
         for junction in self.junctions:
@@ -692,6 +717,10 @@ class Net:
             ax = plt.gca()
         if junction_kwargs is None:
             junction_kwargs = dict()
+        if lane_kwargs is None:
+            lane_kwargs = dict()
+        if lane_marking_kwargs is None:
+            lane_marking_kwargs = dict()
         if zoom_to_extents and not clip_to_limits:
             x_min, y_min, x_max, y_max = self._get_extents()
             ax.set_xlim(x_min, x_max)
@@ -703,10 +732,10 @@ class Net:
         window = Polygon(bounds)
         for edge in self.edges:
             if edge.function != "internal" and (not clip_to_limits or edge.intersects(window)):
-                edge.plot(ax, lane_kwargs, lane_marking_kwargs, **kwargs)
+                edge.plot(ax, {"zorder": -100, **lane_kwargs}, {"zorder": -90, **lane_marking_kwargs}, **kwargs)
         for junction in self.junctions:
             if not clip_to_limits or (junction.shape is not None and junction.shape.intersects(window)):
-                junction.plot(ax, **{**kwargs, **junction_kwargs})
+                junction.plot(ax, **{"zorder": -110, **kwargs, **junction_kwargs})
 
 
 if __name__ == "__main__":
