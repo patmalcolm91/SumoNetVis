@@ -62,7 +62,7 @@ class _Edge:
         :type attrib: dict
         """
         self.id = attrib["id"]
-        self.function = attrib["function"] if "function" in attrib else ""
+        self.function = attrib["function"] if "function" in attrib else "normal"
         self.lanes = []
 
     def append_lane(self, lane):
