@@ -152,7 +152,6 @@ class _Lane:
         coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
         self.alignment = LineString(coords)
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
-        self.color = self.lane_color()
         self.parentEdge = None
 
     def allows(self, vClass):
@@ -224,7 +223,7 @@ class _Lane:
         """
         if "lw" not in kwargs and "linewidth" not in kwargs:
             kwargs["lw"] = 0
-        poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=self.color, **kwargs)
+        poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=self.lane_color(), **kwargs)
         ax.add_patch(poly)
 
     def inverse_lane_index(self):
