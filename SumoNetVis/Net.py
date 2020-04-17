@@ -656,8 +656,9 @@ class Net:
             if edge.function == "internal":
                 continue
             for lane in edge.lanes:
-                lane_content, vertex_count = lane.generate_obj_text(vertex_count)
-                content += lane_content
+                if edge.function not in ["crossing", "walkingarea"]:
+                    lane_content, vertex_count = lane.generate_obj_text(vertex_count)
+                    content += lane_content
                 markings_content, vertex_count = lane.generate_markings_obj_text(vertex_count=vertex_count)
                 content += markings_content
         for junction in self.junctions:
