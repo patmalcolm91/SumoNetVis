@@ -20,6 +20,7 @@ COLOR_SCHEME = {
     "authority": "#FF0000",
     "none": "#FFFFFF",
     "no_passenger": "#5C5C5C",
+    "crosswalk": "#00000000",
     "other": "#000000"
 }
 USA_STYLE = "USA"
@@ -179,7 +180,10 @@ class _Lane:
         :return: lane type
         """
         if self.allow == "pedestrian":
-            return "pedestrian"
+            if self.parentEdge is not None and self.parentEdge.function == "crossing":
+                return "crosswalk"
+            else:
+                return "pedestrian"
         if self.allow == "bicycle":
             return "bicycle"
         if self.allow == "ship":
@@ -344,6 +348,10 @@ class _Lane:
         """
         markings = []
         if self.parentEdge.function == "internal" or self.allow == "ship" or self.allow == "rail":
+            return markings
+        if self.parentEdge.function == "crossing":
+            color, dashes = "w", (0.5, 0.5)
+            markings.append({"line": self.alignment, "lw": self.width, "color": color, "dashes": dashes})
             return markings
         # US-style markings
         if LANE_MARKINGS_STYLE == USA_STYLE:
