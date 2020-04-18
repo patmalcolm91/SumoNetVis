@@ -341,7 +341,7 @@ class _Lane:
         :return: dict containing the marking alignment, line width, color, and dash pattern.
         """
         markings = []
-        if self.parentEdge.function == "internal" or self.allows("ship", "rail", operation="any"):
+        if self.parentEdge.function == "internal" or self.allows == "ship" or self.allows == "rail":
             return markings
         if self.parentEdge.function == "crossing":
             color, dashes = "w", (0.5, 0.5)
