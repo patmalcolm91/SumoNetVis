@@ -24,7 +24,12 @@ class Allowance:
         :type allow_string: str
         :type disallow_string: str
         """
-        allows = np.array(allow_string.split(" ")) if allow_string not in ["all", ""] else self.vClass_list
+        if allow_string in ["all", ""]:
+            allows = self.vClass_list
+        elif allow_string == "none":
+            allows = np.array([])
+        else:
+            allows = np.array(allow_string.split(" "))
         if disallow_string == "all":
             disallows = self.vClass_list
         elif disallow_string == "":
