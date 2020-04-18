@@ -141,12 +141,9 @@ class _Lane:
         self.id = attrib["id"]
         self.index = int(attrib["index"])
         self.speed = float(attrib["speed"])
-        self.allow = attrib["allow"] if "allow" in attrib else ""
-        self.disallow = attrib["disallow"] if "disallow" in attrib else ""
-        if self.allow == "" and self.disallow != "":
-            self.allow = _Utils.invert_lane_allowance(self.disallow)
-        elif self.disallow == "" and self.allow != "":
-            self.disallow = _Utils.invert_lane_allowance(self.allow)
+        allow_string = attrib["allow"] if "allow" in attrib else ""
+        disallow_string = attrib["disallow"] if "disallow" in attrib else ""
+        self.allows = _Utils.Allowance(allow_string, disallow_string)
         self.width = float(attrib["width"]) if "width" in attrib else DEFAULT_LANE_WIDTH
         self.endOffset = attrib["endOffset"] if "endOffset" in attrib else 0
         self.acceleration = attrib["acceleration"] if "acceleration" in attrib else "False"
@@ -155,44 +152,26 @@ class _Lane:
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
         self.parentEdge = None
 
-    def allows(self, vClass):
-        """
-        Returns True if vClass is allowed on Lane, else False.
-
-        :param vClass: vehicle class to check
-        :return: True if vClass allowed, else False
-        :type vClass: str
-        """
-        if vClass == "all":
-            return not False in [self.allows(vc) for vc in _Utils.VEHICLE_CLASS_LIST]
-        if vClass not in _Utils.VEHICLE_CLASS_LIST:
-            raise IndexError("Invalid vClass " + vClass)
-        if self.allow == "all" or (self.allow == "" and self.disallow == ""):
-            return True
-        if self.disallow == "all":
-            return False
-        return vClass in self.allow
-
     def lane_type(self):
         """
         Returns a string descriptor of the type of lane, based on vehicle permissions.
 
         :return: lane type
         """
-        if self.allow == "pedestrian":
+        if self.allows == "pedestrian":
             if self.parentEdge is not None and self.parentEdge.function == "crossing":
                 return "crosswalk"
             else:
                 return "pedestrian"
-        if self.allow == "bicycle":
+        if self.allows == "bicycle":
             return "bicycle"
-        if self.allow == "ship":
+        if self.allows == "ship":
             return "ship"
-        if self.allow == "authority":
+        if self.allows == "authority":
             return "authority"
-        if self.disallow == "all":
+        if self.allows == "none":
             return "none"
-        if not self.allows("passenger"):
+        if not self.allows["passenger"]:
             return "no_passenger"
         else:
             return "other"
@@ -335,7 +314,7 @@ class _Lane:
         :type vertex_count: int
         """
         content = ""
-        h = 0.15 if self.allow == "pedestrian" else 0
+        h = 0.15 if self.allows == "pedestrian" else 0
         vertices, faces = self._get_3d_description(extrude_height=h)
         content += "o " + self.id
         content += "\nusemtl " + self.lane_type()
@@ -362,7 +341,7 @@ class _Lane:
         :return: dict containing the marking alignment, line width, color, and dash pattern.
         """
         markings = []
-        if self.parentEdge.function == "internal" or self.allow == "ship" or self.allow == "rail":
+        if self.parentEdge.function == "internal" or self.allows("ship", "rail", operation="any"):
             return markings
         if self.parentEdge.function == "crossing":
             color, dashes = "w", (0.5, 0.5)
