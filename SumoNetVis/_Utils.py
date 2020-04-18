@@ -51,6 +51,24 @@ class Allowance:
             raise IndexError("Invalid vehicle class " + str(vClass))
         return self.mask[np.where(self.vClass_list == vClass)[0]].all()
 
+    def get_allow_string(self):
+        """Return the 'allow' string as it would appear in a Net file."""
+        if self.mask.all():
+            return "all"
+        elif not self.mask.any():
+            return "none"
+        else:
+            return " ".join(self.vClass_list[self.mask])
+
+    def get_disallow_string(self):
+        """Return the 'disallow' string as it would appear in a Net file."""
+        if self.mask.all():
+            return "none"
+        elif not self.mask.any():
+            return "all"
+        else:
+            return " ".join(self.vClass_list[~self.mask])
+
     def __getitem__(self, vClass):
         return self.allows(vClass)
 
@@ -71,6 +89,16 @@ class Allowance:
             return np.array_equal(self.mask, other.mask)
         else:
             raise NotImplementedError("Can't compare " + str(type(self)) + " to " + str(type(other)))
+
+    def __add__(self, other):
+        if type(other) == str:
+            other = type(self)(other)
+        result = Allowance()
+        result.mask = np.logical_or(self.mask, other.mask)
+        return result
+
+    def __repr__(self):
+        return "Allowance('" + self.get_allow_string() + "')"
 
 
 class LineDataUnits(Line2D):
