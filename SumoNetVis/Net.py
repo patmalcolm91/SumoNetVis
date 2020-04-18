@@ -65,6 +65,7 @@ class _Edge:
         self.id = attrib["id"]
         self.function = attrib["function"] if "function" in attrib else "normal"
         self.lanes = []
+        self.stop_offsets = []
 
     def append_lane(self, lane):
         """
@@ -110,6 +111,13 @@ class _Edge:
                 return True
         return False
 
+    def append_stop_offset(self, attrib):
+        value = attrib["value"]
+        vc = attrib["vClasses"] if "vClasses" in attrib else ""
+        exceptions = attrib["exceptions"] if "exceptions" in attrib else ""
+        vClasses = _Utils.Allowance(allow_string=vc, disallow_string=exceptions)
+        self.stop_offsets.append((value, vClasses))
+
     def plot(self, ax, lane_kwargs=None, lane_marking_kwargs=None, **kwargs):
         """
         Plots the lane.
@@ -151,6 +159,7 @@ class _Lane:
         self.alignment = LineString(coords)
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
         self.parentEdge = None
+        self.stop_offsets = []
 
     def lane_type(self):
         """
@@ -216,6 +225,27 @@ class _Lane:
         :return: inverted lane index
         """
         return self.parentEdge.lane_count() - self.index - 1
+
+    def append_stop_offset(self, attrib):
+        value = attrib["value"]
+        vc = attrib["vClasses"] if "vClasses" in attrib else ""
+        exceptions = attrib["exceptions"] if "exceptions" in attrib else ""
+        vClasses = _Utils.Allowance(allow_string=vc, disallow_string=exceptions)
+        self.stop_offsets.append((value, vClasses))
+
+    def get_stop_line_locations(self):
+        if len(self.stop_offsets) > 0:
+            stop_offsets = self.stop_offsets
+        else:
+            stop_offsets = self.parentEdge.stop_offsets if self.parentEdge is not None else []
+        stop_line_locations = []
+        accrued_vClasses = _Utils.Allowance("none")
+        for stop_offset, vClasses in stop_offsets:
+            accrued_vClasses += vClasses
+            stop_line_locations.append(stop_offset)
+        if accrued_vClasses != "all" and 0 not in stop_line_locations:
+            stop_line_locations.append(0)
+        return stop_line_locations
 
     def _get_marking_3d_description(self, marking, z=0.001):
         """
@@ -399,6 +429,17 @@ class _Lane:
                 rightEdge = self.alignment.parallel_offset(self.width / 2, side="right")
                 color, dashes = "w", (100, 0)
                 markings.append({"line": rightEdge, "lw": lw, "color": color, "dashes": dashes})
+        # Stop line markings (all styles)
+        slw = 0.5
+        if self.allows not in ["pedestrian", "ship"]:
+            for stop_line_location in self.get_stop_line_locations():
+                assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for drawing stop lines."
+                pos = self.alignment.length - stop_line_location - slw/2
+                end_cl = ops.substring(self.alignment, pos-1, pos)
+                end_left = end_cl.parallel_offset(self.width / 2, side="left")
+                end_right = end_cl.parallel_offset(self.width / 2, side="right")
+                stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
+                markings.append({"line": stop_line, "lw": slw, "color": "w", "dashes": (100, 0)})
         return markings
 
     def plot_lane_markings(self, ax, **kwargs):
@@ -599,9 +640,15 @@ class Net:
                 if "function" in obj.attrib and obj.attrib["function"] == "walkingarea":
                     continue
                 edge = _Edge(obj.attrib)
-                for laneObj in obj:
-                    lane = _Lane(laneObj.attrib)
-                    edge.append_lane(lane)
+                for edgeChild in obj:
+                    if edgeChild.tag == "stopOffset":
+                        edge.append_stop_offset()
+                    elif edgeChild.tag == "lane":
+                        lane = _Lane(edgeChild.attrib)
+                        for laneChild in edgeChild:
+                            if laneChild.tag == "stopOffset":
+                                lane.append_stop_offset()
+                        edge.append_lane(lane)
                 self.edges.append(edge)
             elif obj.tag == "junction":
                 junction = _Junction(obj.attrib)
