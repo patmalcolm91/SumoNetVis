@@ -64,6 +64,9 @@ class _Edge:
         """
         self.id = attrib["id"]
         self.function = attrib["function"] if "function" in attrib else "normal"
+        self.from_junction_id = attrib["from"] if "from" in attrib else None
+        self.to_junction_id = attrib["to"] if "to" in attrib else None
+        self.to_junction_id = attrib["to"] if "to" in attrib else None
         self.lanes = []
         self.stop_offsets = []
 
@@ -160,6 +163,7 @@ class _Lane:
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
         self.parentEdge = None
         self.stop_offsets = []
+        self.requests = []  # type: list[_Request]
 
     def lane_type(self):
         """
@@ -246,6 +250,12 @@ class _Lane:
         if not accrued_vClasses.is_superset_of(self.allows) and 0 not in stop_line_locations:
             stop_line_locations.append(0)
         return stop_line_locations
+
+    def _requires_stop_line(self):
+        for request in self.requests:
+            if "1" in request.response:
+                return True
+        return False
 
     def _get_marking_3d_description(self, marking, z=0.001):
         """
@@ -431,7 +441,7 @@ class _Lane:
                 markings.append({"line": rightEdge, "lw": lw, "color": color, "dashes": dashes})
         # Stop line markings (all styles)
         slw = 0.5
-        if self.allows not in ["pedestrian", "ship"]:
+        if self.allows not in ["pedestrian", "ship"] and self._requires_stop_line():
             for stop_line_location in self.get_stop_line_locations():
                 assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for drawing stop lines."
                 pos = self.alignment.length - stop_line_location - slw/2
@@ -573,6 +583,23 @@ class _Connection:
             ax.plot(x, y)
 
 
+class _Request:
+    def __init__(self, attrib, parent_junction=None):
+        """
+        Initializes a Request object
+
+        :param attrib: dict of xml attributes
+        :param parent_junction: parent Junction of this Request
+        :type attrib: dict
+        :type parent_junction: _Junction
+        """
+        self.index = int(attrib["index"])
+        self.response = attrib["response"]
+        self.foes = attrib["foes"]
+        self.cont = attrib["cont"]
+        self.parentJunction = parent_junction
+
+
 class _Junction:
     def __init__(self, attrib):
         """
@@ -582,11 +609,33 @@ class _Junction:
         :type attrib: dict
         """
         self.id = attrib["id"]
+        self.type = attrib["type"]
+        self.incLanes = attrib["incLanes"].split(" ") if attrib["incLanes"] != "" else []
+        self.intLanes = attrib["intLanes"].split(" ") if attrib["intLanes"] != "" else []
+        self._requests = []
         self.shape = None
         if "shape" in attrib:
             coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
             if len(coords) > 2:
                 self.shape = Polygon(coords)
+
+    def append_request(self, request):
+        request.parentJunction = self
+        self._requests.append(request)
+
+    def get_request_by_index(self, index):
+        for req in self._requests:
+            if req.index == index:
+                return req
+        raise IndexError("Junction " + self.id + " has no request with index " + str(index))
+
+    def get_request_by_int_lane(self, lane_id):
+        try:
+            index = self.intLanes.index(lane_id)
+        except ValueError as err:
+            raise IndexError("Junction " + self.id + " does not include lane " + lane_id) from err
+        else:
+            return self.get_request_by_index(index)
 
     def generate_obj_text(self, vertex_count=0):
         """
@@ -652,10 +701,33 @@ class Net:
                 self.edges.append(edge)
             elif obj.tag == "junction":
                 junction = _Junction(obj.attrib)
+                for jnChild in obj:
+                    if jnChild.tag == "request":
+                        req = _Request(jnChild.attrib)
+                        junction.append_request(req)
                 self.junctions.append(junction)
             elif obj.tag == "connection":
                 connection = _Connection(obj.attrib, self)
                 self.connections.append(connection)
+        self._link_objects()
+
+    def _link_objects(self):
+        for junction in self.junctions:
+            if junction.type == "internal":
+                continue
+            inc_lanes = [self._get_lane(i) for i in junction.incLanes]
+            while None in inc_lanes:
+                inc_lanes.remove(None)
+            int_lanes = [self._get_lane(i) for i in junction.intLanes]
+            while None in int_lanes:
+                int_lanes.remove(None)
+            for lane in inc_lanes:
+                for cxn in self._get_connections_from_lane(lane.id):
+                    if cxn.via is not None:
+                        try:
+                            lane.requests.append(junction.get_request_by_int_lane(cxn.via))
+                        except IndexError:
+                            pass
 
     def _get_extents(self):
         lane_geoms = []
@@ -665,6 +737,25 @@ class Net:
         polygons = MultiPolygon(lane_geoms)
         return polygons.bounds
 
+    def _get_junction(self, junction_id):
+        for junction in self.junctions:
+            if junction.id == junction_id:
+                return junction
+
+    def _get_connections_from_lane(self, lane_id):
+        cxns = []
+        for connection in self.connections:
+            if connection.from_edge + "_" + connection.from_lane == lane_id:
+                cxns.append(connection)
+        return cxns
+
+    def _get_connections_via_lane(self, via):
+        cxns = []
+        for connection in self.connections:
+            if connection.via == via:
+                cxns.append(connection)
+        return cxns
+
     def _get_edge(self, edge_id):
         for edge in self.edges:
             if edge.id == edge_id:
@@ -673,7 +764,8 @@ class Net:
     def _get_lane(self, lane_id):
         edge_id = "_".join(lane_id.split("_")[:-1])
         lane_num = int(lane_id.split("_")[-1])
-        return self._get_edge(edge_id).get_lane(lane_num)
+        edge = self._get_edge(edge_id)
+        return edge.get_lane(lane_num) if edge is not None else None
 
     def generate_obj_text(self, style=None, stripe_width_scale=1):
         """
