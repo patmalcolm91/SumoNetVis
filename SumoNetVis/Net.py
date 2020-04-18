@@ -243,7 +243,7 @@ class _Lane:
         for stop_offset, vClasses in stop_offsets:
             accrued_vClasses += vClasses
             stop_line_locations.append(stop_offset)
-        if accrued_vClasses != "all" and 0 not in stop_line_locations:
+        if not accrued_vClasses.is_superset_of(self.allows) and 0 not in stop_line_locations:
             stop_line_locations.append(0)
         return stop_line_locations
 

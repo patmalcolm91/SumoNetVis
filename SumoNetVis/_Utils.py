@@ -74,6 +74,9 @@ class Allowance:
         else:
             return " ".join(self.vClass_list[~self.mask])
 
+    def is_superset_of(self, other):
+        return self.mask[other.mask].all()
+
     def __getitem__(self, vClass):
         return self.allows(vClass)
 
