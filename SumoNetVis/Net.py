@@ -255,6 +255,10 @@ class _Lane:
         return stop_line_locations
 
     def _requires_stop_line(self):
+        if self.parentEdge.to_junction.type in ["internal", "zipper"]:
+            return False
+        if self.parentEdge.to_junction.type == "always_stop":
+            return True
         for request in self.requests:
             if "1" in request.response:
                 return True
