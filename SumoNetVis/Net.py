@@ -115,7 +115,7 @@ class _Edge:
         return False
 
     def append_stop_offset(self, attrib):
-        value = attrib["value"]
+        value = float(attrib["value"])
         vc = attrib["vClasses"] if "vClasses" in attrib else ""
         exceptions = attrib["exceptions"] if "exceptions" in attrib else ""
         vClasses = _Utils.Allowance(allow_string=vc, disallow_string=exceptions)
@@ -231,7 +231,7 @@ class _Lane:
         return self.parentEdge.lane_count() - self.index - 1
 
     def append_stop_offset(self, attrib):
-        value = attrib["value"]
+        value = float(attrib["value"])
         vc = attrib["vClasses"] if "vClasses" in attrib else ""
         exceptions = attrib["exceptions"] if "exceptions" in attrib else ""
         vClasses = _Utils.Allowance(allow_string=vc, disallow_string=exceptions)
@@ -691,12 +691,12 @@ class Net:
                 edge = _Edge(obj.attrib)
                 for edgeChild in obj:
                     if edgeChild.tag == "stopOffset":
-                        edge.append_stop_offset()
+                        edge.append_stop_offset(edgeChild.attrib)
                     elif edgeChild.tag == "lane":
                         lane = _Lane(edgeChild.attrib)
                         for laneChild in edgeChild:
                             if laneChild.tag == "stopOffset":
-                                lane.append_stop_offset()
+                                lane.append_stop_offset(laneChild.attrib)
                         edge.append_lane(lane)
                 self.edges.append(edge)
             elif obj.tag == "junction":
