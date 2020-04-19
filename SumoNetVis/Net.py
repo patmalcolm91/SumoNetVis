@@ -27,20 +27,26 @@ COLOR_SCHEME = {
 USA_STYLE = "USA"
 EUR_STYLE = "EUR"
 LANE_MARKINGS_STYLE = EUR_STYLE  # desired lane marking style
+PLOT_STOP_LINES = True  # whether to plot stop lines
 
 
-def set_style(style="EUR"):
+def set_style(style=None, plot_stop_lines=None):
     """
-    Sets the lane marking style to either USA or EUR.
+    Sets the lane marking style settings.
 
     :param style: desired style ("USA" or "EUR")
+    :param plot_stop_lines: whether to plot stop lines
     :return: None
     :type style: str
+    :type plot_stop_lines: bool
     """
-    global LANE_MARKINGS_STYLE
-    if style not in [USA_STYLE, EUR_STYLE]:
-        raise IndexError("Specified lane marking style not supported: " + style)
-    LANE_MARKINGS_STYLE = style
+    global LANE_MARKINGS_STYLE, PLOT_STOP_LINES
+    if style is not None:
+        if style not in [USA_STYLE, EUR_STYLE]:
+            raise IndexError("Specified lane marking style not supported: " + style)
+        LANE_MARKINGS_STYLE = style
+    if plot_stop_lines is not None:
+        PLOT_STOP_LINES = plot_stop_lines
 
 
 def set_stripe_width_scale(factor=1):
@@ -449,7 +455,7 @@ class _Lane:
                 markings.append({"line": rightEdge, "lw": lw, "color": color, "dashes": dashes})
         # Stop line markings (all styles)
         slw = 0.5
-        if self.allows not in ["pedestrian", "ship"] and self._requires_stop_line():
+        if PLOT_STOP_LINES and self.allows not in ["pedestrian", "ship"] and self._requires_stop_line():
             for stop_line_location in self.get_stop_line_locations():
                 if not hasattr(ops, "substring"):
                     warnings.warn("Shapely >=1.7.0 required for drawing stop lines.")
@@ -843,7 +849,7 @@ class Net:
         return content
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
-             lane_kwargs=None, lane_marking_kwargs=None, junction_kwargs=None, **kwargs):
+             plot_stop_lines=None, lane_kwargs=None, lane_marking_kwargs=None, junction_kwargs=None, **kwargs):
         """
         Plots the Net. Kwargs are passed to the plotting functions, with object-specific kwargs overriding general ones.
 
@@ -852,6 +858,7 @@ class Net:
         :param zoom_to_extents: if True, window will be set to the network extents. Ignored if clip_to_limits is True
         :param style: lane marking style to use for plotting ("USA" or "EUR"). Defaults to last used or "EUR".
         :param stripe_width_scale: scale factor for lane striping widths
+        :param plot_stop_lines: whether to plot stop lines
         :param lane_kwargs: kwargs to pass to the lane plotting function (matplotlib.patches.Polygon())
         :param lane_marking_kwargs: kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
         :param junction_kwargs: kwargs to pass to the junction plotting function (matplotlib.patches.Polygon())
@@ -861,9 +868,12 @@ class Net:
         :type zoom_to_extents: bool
         :type style: str
         :type stripe_width_scale: float
+        :type plot_stop_lines: bool
         """
         if style is not None:
-            set_style(style)
+            set_style(style=style)
+        if plot_stop_lines is not None:
+            set_style(plot_stop_lines=plot_stop_lines)
         set_stripe_width_scale(stripe_width_scale)
         if ax is None:
             ax = plt.gca()
