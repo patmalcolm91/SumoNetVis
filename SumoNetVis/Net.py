@@ -66,7 +66,6 @@ class _Edge:
         self.function = attrib["function"] if "function" in attrib else "normal"
         self.from_junction_id = attrib["from"] if "from" in attrib else None
         self.to_junction_id = attrib["to"] if "to" in attrib else None
-        self.to_junction_id = attrib["to"] if "to" in attrib else None
         self.lanes = []
         self.stop_offsets = []
 
