@@ -21,7 +21,7 @@ import SumoNetVis
 ```
 
 ### Dependencies
-* shapely (>=1.7.0 for OBJ export)
+* shapely (>=1.7.0 for stop lines and OBJ export)
 * matplotlib
 * numpy
 
