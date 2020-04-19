@@ -2,6 +2,7 @@
 Main classes and functions for dealing with a Sumo network.
 """
 
+import warnings
 import xml.etree.ElementTree as ET
 from shapely.geometry import *
 import shapely.ops as ops
@@ -450,7 +451,9 @@ class _Lane:
         slw = 0.5
         if self.allows not in ["pedestrian", "ship"] and self._requires_stop_line():
             for stop_line_location in self.get_stop_line_locations():
-                assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for drawing stop lines."
+                if not hasattr(ops, "substring"):
+                    warnings.warn("Shapely >=1.7.0 required for drawing stop lines.")
+                    break
                 pos = self.alignment.length - stop_line_location - slw/2
                 end_cl = ops.substring(self.alignment, pos-1, pos)
                 end_left = end_cl.parallel_offset(self.width / 2, side="left")
