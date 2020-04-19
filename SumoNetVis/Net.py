@@ -724,10 +724,18 @@ class Net:
             for lane in inc_lanes:
                 for cxn in self._get_connections_from_lane(lane.id):
                     if cxn.via is not None:
+                        reqs = []
                         try:
-                            lane.requests.append(junction.get_request_by_int_lane(cxn.via))
-                        except IndexError:
-                            pass
+                            req = junction.get_request_by_int_lane(cxn.via)
+                        except IndexError:  # if no request found for via, look one level deeper
+                            cxns_internal = self._get_connections_from_lane(cxn.via)
+                            for cxni in cxns_internal:
+                                req = junction.get_request_by_int_lane(cxni.via)
+                                reqs.append(req)
+                        else:
+                            reqs.append(req)
+                        for req in reqs:
+                            lane.requests.append(req)
 
     def _get_extents(self):
         lane_geoms = []
