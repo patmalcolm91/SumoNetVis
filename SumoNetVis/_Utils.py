@@ -89,6 +89,7 @@ class Allowance:
     def __invert__(self):
         inverted = Allowance()
         inverted.mask = ~self.mask
+        return inverted
 
     def __eq__(self, other):
         if type(other) == str:
