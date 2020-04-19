@@ -66,6 +66,8 @@ class _Edge:
         self.function = attrib["function"] if "function" in attrib else "normal"
         self.from_junction_id = attrib["from"] if "from" in attrib else None
         self.to_junction_id = attrib["to"] if "to" in attrib else None
+        self.from_junction = None
+        self.to_junction = None
         self.lanes = []
         self.stop_offsets = []
 
@@ -162,6 +164,8 @@ class _Lane:
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
         self.parentEdge = None
         self.stop_offsets = []
+        self.incoming_connections = []
+        self.outgoing_connections = []
         self.requests = []  # type: list[_Request]
 
     def lane_type(self):
@@ -609,8 +613,10 @@ class _Junction:
         """
         self.id = attrib["id"]
         self.type = attrib["type"]
-        self.incLanes = attrib["incLanes"].split(" ") if attrib["incLanes"] != "" else []
-        self.intLanes = attrib["intLanes"].split(" ") if attrib["intLanes"] != "" else []
+        self.incLane_ids = attrib["incLanes"].split(" ") if attrib["incLanes"] != "" else []
+        self.intLane_ids = attrib["intLanes"].split(" ") if attrib["intLanes"] != "" else []
+        self.incLanes = []
+        self.intLanes = []
         self._requests = []
         self.shape = None
         if "shape" in attrib:
@@ -630,7 +636,7 @@ class _Junction:
 
     def get_request_by_int_lane(self, lane_id):
         try:
-            index = self.intLanes.index(lane_id)
+            index = self.intLane_ids.index(lane_id)
         except ValueError as err:
             raise IndexError("Junction " + self.id + " does not include lane " + lane_id) from err
         else:
@@ -711,16 +717,23 @@ class Net:
         self._link_objects()
 
     def _link_objects(self):
+        for edge in self.edges:
+            edge.from_junction = self._get_junction(edge.from_junction_id)
+            edge.to_junction = self._get_junction(edge.to_junction_id)
         for junction in self.junctions:
             if junction.type == "internal":
                 continue
-            inc_lanes = [self._get_lane(i) for i in junction.incLanes]
-            while None in inc_lanes:
-                inc_lanes.remove(None)
-            int_lanes = [self._get_lane(i) for i in junction.intLanes]
-            while None in int_lanes:
-                int_lanes.remove(None)
-            for lane in inc_lanes:
+            for i in junction.incLane_ids:
+                incLane = self._get_lane(i)
+                if incLane is not None:
+                    junction.incLanes.append(incLane)
+            for i in junction.intLane_ids:
+                intLane = self._get_lane(i)
+                if i is not None:
+                    junction.intLanes.append(intLane)
+            for lane in junction.incLanes:
+                lane.incoming_connections = self._get_connections_from_lane(lane.id)
+                lane.outgoing_connections = self._get_connections_from_lane(lane.id)
                 for cxn in self._get_connections_from_lane(lane.id):
                     if cxn.via is not None:
                         reqs = []
@@ -753,6 +766,13 @@ class Net:
         cxns = []
         for connection in self.connections:
             if connection.from_edge + "_" + connection.from_lane == lane_id:
+                cxns.append(connection)
+        return cxns
+
+    def _get_connections_to_lane(self, lane_id):
+        cxns = []
+        for connection in self.connections:
+            if connection.to_edge + "_" + connection.to_lane == lane_id:
                 cxns.append(connection)
         return cxns
 
