@@ -745,9 +745,9 @@ class Net:
                 if i is not None:
                     junction.intLanes.append(intLane)
             for lane in junction.incLanes:
-                lane.incoming_connections = self._get_connections_from_lane(lane.id)
+                lane.incoming_connections = self._get_connections_to_lane(lane.id)
                 lane.outgoing_connections = self._get_connections_from_lane(lane.id)
-                for cxn in self._get_connections_from_lane(lane.id):
+                for cxn in lane.outgoing_connections:
                     if cxn.via is not None:
                         reqs = []
                         try:
