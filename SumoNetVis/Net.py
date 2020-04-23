@@ -730,20 +730,25 @@ class Net:
         self._link_objects()
 
     def _link_objects(self):
+        # link junctions to edges
         for edge in self.edges:
             edge.from_junction = self._get_junction(edge.from_junction_id)
             edge.to_junction = self._get_junction(edge.to_junction_id)
+        # make junction-related links
         for junction in self.junctions:
             if junction.type == "internal":
                 continue
+            # link incoming lanes to junction
             for i in junction.incLane_ids:
                 incLane = self._get_lane(i)
                 if incLane is not None:
                     junction.incLanes.append(incLane)
+            # link internal lanes to junction
             for i in junction.intLane_ids:
                 intLane = self._get_lane(i)
                 if i is not None:
                     junction.intLanes.append(intLane)
+            # link connections and requests to incoming lanes
             for lane in junction.incLanes:
                 lane.incoming_connections = self._get_connections_to_lane(lane.id)
                 lane.outgoing_connections = self._get_connections_from_lane(lane.id)
