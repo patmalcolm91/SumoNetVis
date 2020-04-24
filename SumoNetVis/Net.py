@@ -2,6 +2,7 @@
 Main classes and functions for dealing with a Sumo network.
 """
 
+import warnings
 import xml.etree.ElementTree as ET
 from shapely.geometry import *
 import shapely.ops as ops
@@ -26,20 +27,26 @@ COLOR_SCHEME = {
 USA_STYLE = "USA"
 EUR_STYLE = "EUR"
 LANE_MARKINGS_STYLE = EUR_STYLE  # desired lane marking style
+PLOT_STOP_LINES = True  # whether to plot stop lines
 
 
-def set_style(style="EUR"):
+def set_style(style=None, plot_stop_lines=None):
     """
-    Sets the lane marking style to either USA or EUR.
+    Sets the lane marking style settings.
 
     :param style: desired style ("USA" or "EUR")
+    :param plot_stop_lines: whether to plot stop lines
     :return: None
     :type style: str
+    :type plot_stop_lines: bool
     """
-    global LANE_MARKINGS_STYLE
-    if style not in [USA_STYLE, EUR_STYLE]:
-        raise IndexError("Specified lane marking style not supported: " + style)
-    LANE_MARKINGS_STYLE = style
+    global LANE_MARKINGS_STYLE, PLOT_STOP_LINES
+    if style is not None:
+        if style not in [USA_STYLE, EUR_STYLE]:
+            raise IndexError("Specified lane marking style not supported: " + style)
+        LANE_MARKINGS_STYLE = style
+    if plot_stop_lines is not None:
+        PLOT_STOP_LINES = plot_stop_lines
 
 
 def set_stripe_width_scale(factor=1):
@@ -64,7 +71,12 @@ class _Edge:
         """
         self.id = attrib["id"]
         self.function = attrib["function"] if "function" in attrib else "normal"
+        self.from_junction_id = attrib["from"] if "from" in attrib else None
+        self.to_junction_id = attrib["to"] if "to" in attrib else None
+        self.from_junction = None
+        self.to_junction = None
         self.lanes = []
+        self.stop_offsets = []
 
     def append_lane(self, lane):
         """
@@ -110,6 +122,13 @@ class _Edge:
                 return True
         return False
 
+    def append_stop_offset(self, attrib):
+        value = float(attrib["value"])
+        vc = attrib["vClasses"] if "vClasses" in attrib else ""
+        exceptions = attrib["exceptions"] if "exceptions" in attrib else ""
+        vClasses = _Utils.Allowance(allow_string=vc, disallow_string=exceptions)
+        self.stop_offsets.append((value, vClasses))
+
     def plot(self, ax, lane_kwargs=None, lane_marking_kwargs=None, **kwargs):
         """
         Plots the lane.
@@ -141,12 +160,9 @@ class _Lane:
         self.id = attrib["id"]
         self.index = int(attrib["index"])
         self.speed = float(attrib["speed"])
-        self.allow = attrib["allow"] if "allow" in attrib else ""
-        self.disallow = attrib["disallow"] if "disallow" in attrib else ""
-        if self.allow == "" and self.disallow != "":
-            self.allow = _Utils.invert_lane_allowance(self.disallow)
-        elif self.disallow == "" and self.allow != "":
-            self.disallow = _Utils.invert_lane_allowance(self.allow)
+        allow_string = attrib["allow"] if "allow" in attrib else ""
+        disallow_string = attrib["disallow"] if "disallow" in attrib else ""
+        self.allows = _Utils.Allowance(allow_string, disallow_string)
         self.width = float(attrib["width"]) if "width" in attrib else DEFAULT_LANE_WIDTH
         self.endOffset = attrib["endOffset"] if "endOffset" in attrib else 0
         self.acceleration = attrib["acceleration"] if "acceleration" in attrib else "False"
@@ -154,24 +170,10 @@ class _Lane:
         self.alignment = LineString(coords)
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
         self.parentEdge = None
-
-    def allows(self, vClass):
-        """
-        Returns True if vClass is allowed on Lane, else False.
-
-        :param vClass: vehicle class to check
-        :return: True if vClass allowed, else False
-        :type vClass: str
-        """
-        if vClass == "all":
-            return not False in [self.allows(vc) for vc in _Utils.VEHICLE_CLASS_LIST]
-        if vClass not in _Utils.VEHICLE_CLASS_LIST:
-            raise IndexError("Invalid vClass " + vClass)
-        if self.allow == "all" or (self.allow == "" and self.disallow == ""):
-            return True
-        if self.disallow == "all":
-            return False
-        return vClass in self.allow
+        self.stop_offsets = []
+        self.incoming_connections = []
+        self.outgoing_connections = []
+        self.requests = []  # type: list[_Request]
 
     def lane_type(self):
         """
@@ -179,20 +181,20 @@ class _Lane:
 
         :return: lane type
         """
-        if self.allow == "pedestrian":
+        if self.allows == "pedestrian":
             if self.parentEdge is not None and self.parentEdge.function == "crossing":
                 return "crosswalk"
             else:
                 return "pedestrian"
-        if self.allow == "bicycle":
+        if self.allows == "bicycle":
             return "bicycle"
-        if self.allow == "ship":
+        if self.allows == "ship":
             return "ship"
-        if self.allow == "authority":
+        if self.allows == "authority":
             return "authority"
-        if self.disallow == "all":
+        if self.allows == "none":
             return "none"
-        if not self.allows("passenger"):
+        if not self.allows["passenger"]:
             return "no_passenger"
         else:
             return "other"
@@ -237,6 +239,37 @@ class _Lane:
         :return: inverted lane index
         """
         return self.parentEdge.lane_count() - self.index - 1
+
+    def append_stop_offset(self, attrib):
+        value = float(attrib["value"])
+        vc = attrib["vClasses"] if "vClasses" in attrib else ""
+        exceptions = attrib["exceptions"] if "exceptions" in attrib else ""
+        vClasses = _Utils.Allowance(allow_string=vc, disallow_string=exceptions)
+        self.stop_offsets.append((value, vClasses))
+
+    def get_stop_line_locations(self):
+        if len(self.stop_offsets) > 0:
+            stop_offsets = self.stop_offsets
+        else:
+            stop_offsets = self.parentEdge.stop_offsets if self.parentEdge is not None else []
+        stop_line_locations = []
+        accrued_vClasses = _Utils.Allowance("none")
+        for stop_offset, vClasses in stop_offsets:
+            accrued_vClasses += vClasses
+            stop_line_locations.append(stop_offset)
+        if not accrued_vClasses.is_superset_of(self.allows) and 0 not in stop_line_locations:
+            stop_line_locations.append(0)
+        return stop_line_locations
+
+    def _requires_stop_line(self):
+        if self.parentEdge.to_junction.type in ["internal", "zipper"]:
+            return False
+        if self.parentEdge.to_junction.type == "always_stop":
+            return True
+        for request in self.requests:
+            if "1" in request.response:
+                return True
+        return False
 
     def _get_marking_3d_description(self, marking, z=0.001):
         """
@@ -335,7 +368,7 @@ class _Lane:
         :type vertex_count: int
         """
         content = ""
-        h = 0.15 if self.allow == "pedestrian" else 0
+        h = 0.15 if self.allows == "pedestrian" else 0
         vertices, faces = self._get_3d_description(extrude_height=h)
         content += "o " + self.id
         content += "\nusemtl " + self.lane_type()
@@ -362,7 +395,7 @@ class _Lane:
         :return: dict containing the marking alignment, line width, color, and dash pattern.
         """
         markings = []
-        if self.parentEdge.function == "internal" or self.allow == "ship" or self.allow == "rail":
+        if self.parentEdge.function == "internal" or self.allows == "ship" or self.allows == "rail":
             return markings
         if self.parentEdge.function == "crossing":
             color, dashes = "w", (0.5, 0.5)
@@ -420,6 +453,19 @@ class _Lane:
                 rightEdge = self.alignment.parallel_offset(self.width / 2, side="right")
                 color, dashes = "w", (100, 0)
                 markings.append({"line": rightEdge, "lw": lw, "color": color, "dashes": dashes})
+        # Stop line markings (all styles)
+        slw = 0.5
+        if PLOT_STOP_LINES and self.allows not in ["pedestrian", "ship"] and self._requires_stop_line():
+            for stop_line_location in self.get_stop_line_locations():
+                if not hasattr(ops, "substring"):
+                    warnings.warn("Shapely >=1.7.0 required for drawing stop lines.")
+                    break
+                pos = self.alignment.length - stop_line_location - slw/2
+                end_cl = ops.substring(self.alignment, pos-1, pos)
+                end_left = end_cl.parallel_offset(self.width / 2, side="left")
+                end_right = end_cl.parallel_offset(self.width / 2, side="right")
+                stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
+                markings.append({"line": stop_line, "lw": slw, "color": "w", "dashes": (100, 0)})
         return markings
 
     def plot_lane_markings(self, ax, **kwargs):
@@ -553,6 +599,23 @@ class _Connection:
             ax.plot(x, y)
 
 
+class _Request:
+    def __init__(self, attrib, parent_junction=None):
+        """
+        Initializes a Request object
+
+        :param attrib: dict of xml attributes
+        :param parent_junction: parent Junction of this Request
+        :type attrib: dict
+        :type parent_junction: _Junction
+        """
+        self.index = int(attrib["index"])
+        self.response = attrib["response"]
+        self.foes = attrib["foes"]
+        self.cont = attrib["cont"]
+        self.parentJunction = parent_junction
+
+
 class _Junction:
     def __init__(self, attrib):
         """
@@ -562,11 +625,35 @@ class _Junction:
         :type attrib: dict
         """
         self.id = attrib["id"]
+        self.type = attrib["type"]
+        self.incLane_ids = attrib["incLanes"].split(" ") if attrib["incLanes"] != "" else []
+        self.intLane_ids = attrib["intLanes"].split(" ") if attrib["intLanes"] != "" else []
+        self.incLanes = []
+        self.intLanes = []
+        self._requests = []
         self.shape = None
         if "shape" in attrib:
             coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
             if len(coords) > 2:
                 self.shape = Polygon(coords)
+
+    def append_request(self, request):
+        request.parentJunction = self
+        self._requests.append(request)
+
+    def get_request_by_index(self, index):
+        for req in self._requests:
+            if req.index == index:
+                return req
+        raise IndexError("Junction " + self.id + " has no request with index " + str(index))
+
+    def get_request_by_int_lane(self, lane_id):
+        try:
+            index = self.intLane_ids.index(lane_id)
+        except ValueError as err:
+            raise IndexError("Junction " + self.id + " does not include lane " + lane_id) from err
+        else:
+            return self.get_request_by_index(index)
 
     def generate_obj_text(self, vertex_count=0):
         """
@@ -620,16 +707,65 @@ class Net:
                 if "function" in obj.attrib and obj.attrib["function"] == "walkingarea":
                     continue
                 edge = _Edge(obj.attrib)
-                for laneObj in obj:
-                    lane = _Lane(laneObj.attrib)
-                    edge.append_lane(lane)
+                for edgeChild in obj:
+                    if edgeChild.tag == "stopOffset":
+                        edge.append_stop_offset(edgeChild.attrib)
+                    elif edgeChild.tag == "lane":
+                        lane = _Lane(edgeChild.attrib)
+                        for laneChild in edgeChild:
+                            if laneChild.tag == "stopOffset":
+                                lane.append_stop_offset(laneChild.attrib)
+                        edge.append_lane(lane)
                 self.edges.append(edge)
             elif obj.tag == "junction":
                 junction = _Junction(obj.attrib)
+                for jnChild in obj:
+                    if jnChild.tag == "request":
+                        req = _Request(jnChild.attrib)
+                        junction.append_request(req)
                 self.junctions.append(junction)
             elif obj.tag == "connection":
                 connection = _Connection(obj.attrib, self)
                 self.connections.append(connection)
+        self._link_objects()
+
+    def _link_objects(self):
+        # link junctions to edges
+        for edge in self.edges:
+            edge.from_junction = self._get_junction(edge.from_junction_id)
+            edge.to_junction = self._get_junction(edge.to_junction_id)
+        # make junction-related links
+        for junction in self.junctions:
+            if junction.type == "internal":
+                continue
+            # link incoming lanes to junction
+            for i in junction.incLane_ids:
+                incLane = self._get_lane(i)
+                if incLane is not None:
+                    junction.incLanes.append(incLane)
+            # link internal lanes to junction
+            for i in junction.intLane_ids:
+                intLane = self._get_lane(i)
+                if i is not None:
+                    junction.intLanes.append(intLane)
+            # link connections and requests to incoming lanes
+            for lane in junction.incLanes:
+                lane.incoming_connections = self._get_connections_to_lane(lane.id)
+                lane.outgoing_connections = self._get_connections_from_lane(lane.id)
+                for cxn in lane.outgoing_connections:
+                    if cxn.via is not None:
+                        reqs = []
+                        try:
+                            req = junction.get_request_by_int_lane(cxn.via)
+                        except IndexError:  # if no request found for via, look one level deeper
+                            cxns_internal = self._get_connections_from_lane(cxn.via)
+                            for cxni in cxns_internal:
+                                req = junction.get_request_by_int_lane(cxni.via)
+                                reqs.append(req)
+                        else:
+                            reqs.append(req)
+                        for req in reqs:
+                            lane.requests.append(req)
 
     def _get_extents(self):
         lane_geoms = []
@@ -639,6 +775,32 @@ class Net:
         polygons = MultiPolygon(lane_geoms)
         return polygons.bounds
 
+    def _get_junction(self, junction_id):
+        for junction in self.junctions:
+            if junction.id == junction_id:
+                return junction
+
+    def _get_connections_from_lane(self, lane_id):
+        cxns = []
+        for connection in self.connections:
+            if connection.from_edge + "_" + connection.from_lane == lane_id:
+                cxns.append(connection)
+        return cxns
+
+    def _get_connections_to_lane(self, lane_id):
+        cxns = []
+        for connection in self.connections:
+            if connection.to_edge + "_" + connection.to_lane == lane_id:
+                cxns.append(connection)
+        return cxns
+
+    def _get_connections_via_lane(self, via):
+        cxns = []
+        for connection in self.connections:
+            if connection.via == via:
+                cxns.append(connection)
+        return cxns
+
     def _get_edge(self, edge_id):
         for edge in self.edges:
             if edge.id == edge_id:
@@ -647,7 +809,8 @@ class Net:
     def _get_lane(self, lane_id):
         edge_id = "_".join(lane_id.split("_")[:-1])
         lane_num = int(lane_id.split("_")[-1])
-        return self._get_edge(edge_id).get_lane(lane_num)
+        edge = self._get_edge(edge_id)
+        return edge.get_lane(lane_num) if edge is not None else None
 
     def generate_obj_text(self, style=None, stripe_width_scale=1):
         """
@@ -691,7 +854,7 @@ class Net:
         return content
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
-             lane_kwargs=None, lane_marking_kwargs=None, junction_kwargs=None, **kwargs):
+             plot_stop_lines=None, lane_kwargs=None, lane_marking_kwargs=None, junction_kwargs=None, **kwargs):
         """
         Plots the Net. Kwargs are passed to the plotting functions, with object-specific kwargs overriding general ones.
 
@@ -700,6 +863,7 @@ class Net:
         :param zoom_to_extents: if True, window will be set to the network extents. Ignored if clip_to_limits is True
         :param style: lane marking style to use for plotting ("USA" or "EUR"). Defaults to last used or "EUR".
         :param stripe_width_scale: scale factor for lane striping widths
+        :param plot_stop_lines: whether to plot stop lines
         :param lane_kwargs: kwargs to pass to the lane plotting function (matplotlib.patches.Polygon())
         :param lane_marking_kwargs: kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
         :param junction_kwargs: kwargs to pass to the junction plotting function (matplotlib.patches.Polygon())
@@ -709,9 +873,12 @@ class Net:
         :type zoom_to_extents: bool
         :type style: str
         :type stripe_width_scale: float
+        :type plot_stop_lines: bool
         """
         if style is not None:
-            set_style(style)
+            set_style(style=style)
+        if plot_stop_lines is not None:
+            set_style(plot_stop_lines=plot_stop_lines)
         set_stripe_width_scale(stripe_width_scale)
         if ax is None:
             ax = plt.gca()

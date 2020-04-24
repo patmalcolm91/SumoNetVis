@@ -21,7 +21,7 @@ import SumoNetVis
 ```
 
 ### Dependencies
-* shapely (>=1.7.0 for OBJ export)
+* shapely (>=1.7.0 for stop lines and OBJ export)
 * matplotlib
 * numpy
 
@@ -48,6 +48,7 @@ the ```Net.plot()``` function takes the following optional parameters:
 * zoom_to_extents: auto-zoom to Net extents (defaults to True)
 * style: lane marking style to use ("USA" or "EUR")
 * stripe_width_scale: scale factor for lane marking widths (defaults to 1)
+* plot_stop_lines: whether to plot stop lines
 * lane_kwargs: dict of kwargs to pass to the lane plotting function (matplotlib.patches.Polygon()), for example alpha
 * lane_marking_kwargs: dict of kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
 * junction_kwargs: dict of kwargs to pass to the junction plotting function (matplotlib.patches.Polygon())
