@@ -149,6 +149,72 @@ class _Edge:
             lane.plot_lane_markings(ax, **{**kwargs, **lane_marking_kwargs})
 
 
+class _LaneMarking:
+    def __init__(self, alignment, linewidth, color, dashes, purpose=None):
+        self.purpose = "" if purpose is None else purpose
+        self.alignment = alignment
+        self.linewidth = linewidth
+        self.color = color
+        self.dashes = dashes
+
+    def plot(self, ax, **kwargs):
+        x, y = zip(*self.alignment.coords)
+        line = _Utils.LineDataUnits(x, y, linewidth=self.linewidth, color=self.color, dashes=self.dashes, **kwargs)
+        ax.add_line(line)
+
+    def _get_3d_description(self, z=0.001):
+        """
+        Generates 3D vertices and faces for export of lane markings to OBJ format.
+
+        :param z: the desired z coordinate for the lane markings. Defaults to 0.001.
+        :return: vertex coordinates, faces (as lists of vertex indices)
+        :type z: float
+        """
+        if self.dashes[1] == 0:  # if solid line
+            buffer = self.alignment.buffer(self.linewidth / 2, cap_style=CAP_STYLE.flat)
+            if buffer.geometryType() == "MultiPolygon":
+                outlines = [polygon.boundary.coords for polygon in buffer]
+            elif buffer.geometryType() == "Polygon":
+                outlines = [buffer.boundary.coords]
+            else:
+                raise TypeError("Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
+            for vertices_2d in outlines:
+                vertices = [[v[0], v[1], z] for v in vertices_2d]
+                faces = [[i + 1 for i in range(len(vertices))]]
+            return vertices, faces
+        else:  # if dashed line
+            vertices, faces = [], []
+            dash_length, gap = self.dashes
+            vertex_count = 0
+            for s in np.arange(0, self.alignment.length, dash_length + gap):
+                assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for OBJ export of dashed lines."
+                dash_segment = ops.substring(self.alignment, s, min(s + dash_length, self.alignment.length))
+                buffer = dash_segment.buffer(self.linewidth / 2, cap_style=CAP_STYLE.flat)
+                if buffer.geometryType() == "MultiPolygon":
+                    outlines = [polygon.boundary.coords for polygon in buffer]
+                elif buffer.geometryType() == "Polygon":
+                    outlines = [buffer.boundary.coords]
+                else:
+                    raise TypeError(
+                        "Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
+                for outline in outlines:
+                    vertices += [[v[0], v[1], z] for v in outline]
+                    faces.append([i + vertex_count + 1 for i in range(len(outline))])
+                    vertex_count += len(outline)
+            return vertices, faces
+
+    def generate_obj_text(self, vertex_count):
+        content = ""
+        vertices, faces = self._get_3d_description()
+        content += "o " + self.purpose + "_marking"
+        content += "\nusemtl marking_" + self.color
+        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
+        content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
+        content += "\n\n"
+        vertex_count += len(vertices)
+        return content, vertex_count
+
+
 class _Lane:
     def __init__(self, attrib):
         """
@@ -271,47 +337,6 @@ class _Lane:
                 return True
         return False
 
-    def _get_marking_3d_description(self, marking, z=0.001):
-        """
-        Generates 3D vertices and faces for export of lane markings to OBJ format.
-
-        :param z: the desired z coordinate for the lane markings. Defaults to 0.001.
-        :return: vertex coordinates, faces (as lists of vertex indices)
-        :type z: float
-        """
-        if marking["dashes"][1] == 0:  # if solid line
-            buffer = marking["line"].buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat)
-            if buffer.geometryType() == "MultiPolygon":
-                outlines = [polygon.boundary.coords for polygon in buffer]
-            elif buffer.geometryType() == "Polygon":
-                outlines = [buffer.boundary.coords]
-            else:
-                raise TypeError("Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
-            for vertices_2d in outlines:
-                vertices = [[v[0], v[1], z] for v in vertices_2d]
-                faces = [[i+1 for i in range(len(vertices))]]
-            return vertices, faces
-        else:  # if dashed line
-            vertices, faces = [], []
-            dash_length, gap = marking["dashes"]
-            vertex_count = 0
-            for s in np.arange(0, marking["line"].length, dash_length+gap):
-                assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for OBJ export of dashed lines."
-                dash_segment = ops.substring(marking["line"], s, min(s+dash_length, marking["line"].length))
-                buffer = dash_segment.buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat)
-                if buffer.geometryType() == "MultiPolygon":
-                    outlines = [polygon.boundary.coords for polygon in buffer]
-                elif buffer.geometryType() == "Polygon":
-                    outlines = [buffer.boundary.coords]
-                else:
-                    raise TypeError(
-                        "Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
-                for outline in outlines:
-                    vertices += [[v[0], v[1], z] for v in outline]
-                    faces.append([i+vertex_count+1 for i in range(len(outline))])
-                    vertex_count += len(outline)
-            return vertices, faces
-
     def generate_markings_obj_text(self, vertex_count=0):
         """
         Generates Wavefront-OBJ file contents for this lane's markings, assuming vertex_count previous vertices.
@@ -321,14 +346,9 @@ class _Lane:
         :type vertex_count: int
         """
         content = ""
-        for i, marking in enumerate(self._guess_lane_markings()):
-            vertices, faces = self._get_marking_3d_description(marking)
-            content += "o " + self.id + "_marking" + str(i)
-            content += "\nusemtl marking_" + marking["color"]
-            content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
-            content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
-            content += "\n\n"
-            vertex_count += len(vertices)
+        for marking in self._guess_lane_markings():
+            content_i, vertex_count = marking.generate_obj_text(vertex_count)
+            content += content_i
         return content, vertex_count
 
     def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
@@ -378,16 +398,6 @@ class _Lane:
         vertex_count += len(vertices)
         return content, vertex_count
 
-    def _draw_lane_marking(self, ax, line, width, color, dashes, **kwargs):
-        try:
-            x, y = zip(*line.coords)
-            line = _Utils.LineDataUnits(x, y, linewidth=width, color=color, dashes=dashes, **kwargs)
-            ax.add_line(line)
-        except NotImplementedError:
-            print("Can't print center stripe for lane " + self.id)
-        except ValueError:
-            print("Generated lane marking geometry is empty for lane " + self.id)
-
     def _guess_lane_markings(self):
         """
         Guesses lane markings based on lane configuration and globally specified lane marking style.
@@ -399,7 +409,7 @@ class _Lane:
             return markings
         if self.parentEdge.function == "crossing":
             color, dashes = "w", (0.5, 0.5)
-            markings.append({"line": self.alignment, "lw": self.width, "color": color, "dashes": dashes})
+            markings.append(_LaneMarking(self.alignment, self.width, color, dashes, purpose="crossing"))
             return markings
         # US-style markings
         if LANE_MARKINGS_STYLE == USA_STYLE:
@@ -408,7 +418,7 @@ class _Lane:
             if self.inverse_lane_index() == 0:
                 leftEdge = self.alignment.parallel_offset(self.width/2-lw, side="left")
                 color, dashes = "y", (100, 0)
-                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center"))
             # Draw non-centerline markings
             else:
                 adjacent_lane = self.parentEdge.get_lane(self.index+1)
@@ -421,12 +431,12 @@ class _Lane:
                         dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
                     else:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
-                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane"))
             # draw outer lane marking if necessary
             if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width/2, side="right")
                 color, dashes = "w", (100, 0)
-                markings.append({"line": rightEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer"))
         # European-style markings
         elif LANE_MARKINGS_STYLE == EUR_STYLE:
             lw = 0.1 * STRIPE_WIDTH_SCALE_FACTOR
@@ -434,7 +444,7 @@ class _Lane:
             if self.inverse_lane_index() == 0:
                 leftEdge = self.alignment.parallel_offset(self.width/2, side="left")
                 color, dashes = "w", (100, 0)
-                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center"))
             # Draw non-centerline markings
             else:
                 adjacent_lane = self.parentEdge.get_lane(self.index + 1)
@@ -447,12 +457,12 @@ class _Lane:
                         dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
                     else:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
-                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane"))
             # draw outer lane marking if necessary
             if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width / 2, side="right")
                 color, dashes = "w", (100, 0)
-                markings.append({"line": rightEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer"))
         # Stop line markings (all styles)
         slw = 0.5
         if PLOT_STOP_LINES and self.allows not in ["pedestrian", "ship"] and self._requires_stop_line():
@@ -465,7 +475,7 @@ class _Lane:
                 end_left = end_cl.parallel_offset(self.width / 2, side="left")
                 end_right = end_cl.parallel_offset(self.width / 2, side="right")
                 stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
-                markings.append({"line": stop_line, "lw": slw, "color": "w", "dashes": (100, 0)})
+                markings.append(_LaneMarking(stop_line, slw, "w", (100, 0), purpose="stopline"))
         return markings
 
     def plot_lane_markings(self, ax, **kwargs):
@@ -477,7 +487,12 @@ class _Lane:
         :type ax: plt.Axes
         """
         for marking in self._guess_lane_markings():
-            self._draw_lane_marking(ax, marking["line"], marking["lw"], marking["color"], marking["dashes"], **kwargs)
+            try:
+                marking.plot(ax, **kwargs)
+            except NotImplementedError:
+                print("Can't print center stripe for lane " + self.id)
+            except ValueError:
+                print("Generated lane marking geometry is empty for lane " + self.id)
 
 
 class _Connection:
