@@ -6,6 +6,91 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 
+class Object3D:
+    def __init__(self, name, material, vertices, faces):
+        """
+        Create a 3D object.
+
+        :param name: name of the object
+        :param material: name of the material to associate to the object
+        :param vertices: list of vertex coordinates
+        :param faces: list of faces, each a list of indices of the vertices making up the face
+        :type name: str
+        :type material: str
+        :type vertices: list[list[float]]
+        :type faces: list[list[int]]
+        """
+        self.vertices = vertices
+        self.faces = faces
+        self.name = name
+        self.material = material
+
+    @classmethod
+    def from_shape(cls, shape, name, material, z=0, extrude_height=0, include_bottom_face=False):
+        """
+        Generates an Object3D from a shapely shape, either as a flat plane or by extrusion along the z axis
+
+        :param shape: shapely Polygon or MultiPolygon from which to create 3D object
+        :param name: name of the object
+        :param material: name of the material to associate to the object
+        :param z: the desired z coordinate for the base of the object. Defaults to zero.
+        :param extrude_height: distance by which to extrude the face vertically.
+        :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :type name: str
+        :type material: str
+        :type z: float
+        :type extrude_height: float
+        :type include_bottom_face: bool
+        """
+        vertices, faces = [], []
+        # get coordinate sequences from shape
+        if shape.geometryType() == "MultiPolygon":
+            outlines = [polygon.boundary.coords for polygon in shape]
+        elif shape.geometryType() == "Polygon":
+            outlines = [shape.boundary.coords]
+        else:
+            raise NotImplementedError("Can't generate 3D object from " + shape.geometryType())
+        # calculate vertices and faces
+        for outline in outlines:
+            # generate coordinates of top and bottom face
+            bottom_vertices = [[v[0], v[1], z] for v in outline]
+            top_vertices = [[v[0], v[1], z+extrude_height] for v in outline]
+            v_offset = len(vertices)
+            edge_len = len(top_vertices)
+            # add top vertices and face
+            vertices += top_vertices
+            faces += [[i+1 for i in range(v_offset, v_offset+edge_len)]]
+            # perform extrusion
+            if extrude_height != 0:
+                vertices += bottom_vertices
+                # add side faces
+                faces += [[i+1, i+2, i+edge_len+2, i+edge_len+1] for i in range(v_offset, v_offset+edge_len-1)]
+                # add bottom face
+                if include_bottom_face:
+                    faces += [[i+edge_len+1 for i in range(v_offset, v_offset+edge_len)]]
+        return cls(name, material, vertices, faces)
+
+
+def generate_obj_text_from_objects(objects):
+    """
+    Generate Wavefront OBJ text from a list of Object3D objects
+
+    :param objects: list of Object3D objects
+    :return: Wavefront OBJ text
+    :type objects: list[Object3D]
+    """
+    content = ""
+    vertex_count = 0
+    for object in objects:
+        content += "o " + object.name
+        content += "\nusemtl " + object.material
+        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in object.vertices])
+        content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in object.faces])
+        content += "\n\n"
+        vertex_count += len(object.vertices)
+    return content
+
+
 class Allowance:
     """
     A class for handling vehicle class lane allowances.

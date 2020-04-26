@@ -162,57 +162,37 @@ class _LaneMarking:
         line = _Utils.LineDataUnits(x, y, linewidth=self.linewidth, color=self.color, dashes=self.dashes, **kwargs)
         ax.add_line(line)
 
-    def _get_3d_description(self, z=0.001):
+    def get_as_shape(self, cap_style=CAP_STYLE.flat):
         """
-        Generates 3D vertices and faces for export of lane markings to OBJ format.
+        Get marking as a shapely Polygon or MultiPolygon
 
-        :param z: the desired z coordinate for the lane markings. Defaults to 0.001.
-        :return: vertex coordinates, faces (as lists of vertex indices)
-        :type z: float
+        :param cap_style: cap style to use when performing buffer
+        :return: shapely Polygon or MultiPolygon
         """
         if self.dashes[1] == 0:  # if solid line
-            buffer = self.alignment.buffer(self.linewidth / 2, cap_style=CAP_STYLE.flat)
-            if buffer.geometryType() == "MultiPolygon":
-                outlines = [polygon.boundary.coords for polygon in buffer]
-            elif buffer.geometryType() == "Polygon":
-                outlines = [buffer.boundary.coords]
-            else:
-                raise TypeError("Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
-            for vertices_2d in outlines:
-                vertices = [[v[0], v[1], z] for v in vertices_2d]
-                faces = [[i + 1 for i in range(len(vertices))]]
-            return vertices, faces
+            buffer = self.alignment.buffer(self.linewidth / 2, cap_style=cap_style)
         else:  # if dashed line
-            vertices, faces = [], []
+            buffer = MultiPolygon()
             dash_length, gap = self.dashes
-            vertex_count = 0
             for s in np.arange(0, self.alignment.length, dash_length + gap):
                 assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for OBJ export of dashed lines."
                 dash_segment = ops.substring(self.alignment, s, min(s + dash_length, self.alignment.length))
-                buffer = dash_segment.buffer(self.linewidth / 2, cap_style=CAP_STYLE.flat)
-                if buffer.geometryType() == "MultiPolygon":
-                    outlines = [polygon.boundary.coords for polygon in buffer]
-                elif buffer.geometryType() == "Polygon":
-                    outlines = [buffer.boundary.coords]
-                else:
-                    raise TypeError(
-                        "Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
-                for outline in outlines:
-                    vertices += [[v[0], v[1], z] for v in outline]
-                    faces.append([i + vertex_count + 1 for i in range(len(outline))])
-                    vertex_count += len(outline)
-            return vertices, faces
+                buffer = buffer.union(dash_segment.buffer(self.linewidth / 2, cap_style=cap_style))
+        return buffer
 
-    def generate_obj_text(self, vertex_count):
-        content = ""
-        vertices, faces = self._get_3d_description()
-        content += "o " + self.purpose + "_marking"
-        content += "\nusemtl marking_" + self.color
-        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
-        content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
-        content += "\n\n"
-        vertex_count += len(vertices)
-        return content, vertex_count
+    def get_as_3d_object(self, z=0.001, extrude_height=0, include_bottom_face=False):
+        """
+        Generates an Object3D from the marking.
+
+        :param z: z coordinate of marking
+        :param extrude_height: distance by which to extrude the marking
+        :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :return: Object3D
+        :type z: float
+        :type extrude_height: float
+        :type include_bottom_face: bool
+        """
+        return _Utils.Object3D.from_shape(self.get_as_shape(), self.purpose+"_marking", self.color+"_marking", z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
 
 
 class _Lane:
@@ -337,66 +317,36 @@ class _Lane:
                 return True
         return False
 
-    def generate_markings_obj_text(self, vertex_count=0):
+    def get_markings_as_3d_objects(self, z_lane=0, extrude_height=0, include_bottom_face=False):
         """
-        Generates Wavefront-OBJ file contents for this lane's markings, assuming vertex_count previous vertices.
+        Generates list of Object3D objects from the lane markings.
 
-        :param vertex_count: number of vertices already present in OBJ file.
-        :return: obj text contents, new vertex_count
-        :type vertex_count: int
-        """
-        content = ""
-        for marking in self._guess_lane_markings():
-            content_i, vertex_count = marking.generate_obj_text(vertex_count)
-            content += content_i
-        return content, vertex_count
-
-    def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
-        """
-        Generates 3D vertices and faces for export to OBJ format.
-
-        :param z: the desired z coordinate for the base of the object. Defaults to zero.
-        :param extrude_height: distance by which to extrude the face vertically.
-        :param include_bottom_face: whether or not to include the bottom face of the extruded geometry.
-        :return: vertex coordinates, faces (as lists of vertex indices)
-        :type z: float
+        :param z_lane: z coordinate of the lane. Markings will be generated slightly above this to prevent z fighting.
+        :param extrude_height: distance by which to extrude the markings
+        :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :return: Object3D
+        :type z_lane: float
         :type extrude_height: float
         :type include_bottom_face: bool
         """
-        vertices_2d = self.shape.boundary.coords
-        top_vertices, bottom_vertices = [], []
-        for vertex in vertices_2d:
-            bottom_vertices.append([vertex[0], vertex[1], z])
-            top_vertices.append([vertex[0], vertex[1], z+extrude_height])
-        vertices, faces = [], []
-        vertices += top_vertices
-        edge_size = len(top_vertices)
-        faces += [[i+1 for i in range(edge_size)]]
-        if extrude_height != 0:
-            vertices += bottom_vertices
-            faces += [[i+1, i+2, i+edge_size+2, i+edge_size+1] for i in range(edge_size-1)]
-            if include_bottom_face:
-                faces += [[i+edge_size+1 for i in range(edge_size)]]
-        return vertices, faces
+        objects = []
+        for marking in self._guess_lane_markings():
+            z = z_lane+0.002 if marking.purpose == "crossing" else z_lane+0.001
+            objects.append(marking.get_as_3d_object(z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face))
+        return objects
 
-    def generate_obj_text(self, vertex_count=0):
+    def get_as_3d_object(self, z=0, include_bottom_face=False):
         """
-        Generates Wavefront-OBJ file contents for this object, assuming vertex_count previous vertices.
+        Generates an Object3D from the lane.
 
-        :param vertex_count: number of vertices already present in OBJ file.
-        :return: obj text contents, new vertex_count
-        :type vertex_count: int
+        :param z: z coordinate of junction
+        :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :return: Object3D
+        :type z: float
+        :type include_bottom_face: bool
         """
-        content = ""
-        h = 0.15 if self.allows == "pedestrian" else 0
-        vertices, faces = self._get_3d_description(extrude_height=h)
-        content += "o " + self.id
-        content += "\nusemtl " + self.lane_type()
-        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
-        content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
-        content += "\n\n"
-        vertex_count += len(vertices)
-        return content, vertex_count
+        h = 0.15 if self.lane_type() == "pedestrian" else 0
+        return _Utils.Object3D.from_shape(self.shape, self.id, self.lane_type()+"_lane", z=0, extrude_height=h)
 
     def _guess_lane_markings(self):
         """
@@ -550,57 +500,22 @@ class _Connection:
         boundary_coords = right_coords + left_coords + [right_coords[0]]
         return Polygon(boundary_coords)
 
-    def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
+    def get_as_3d_object(self, z=0, include_bottom_face=False):
         """
-        Generates 3D vertices and faces for export to OBJ format.
+        Generates an Object3D from the connection.
 
-        :param z: the desired z coordinate for the base of the object. Defaults to zero.
-        :param extrude_height: distance by which to extrude the face vertically.
-        :param include_bottom_face: whether or not to include the bottom face of the extruded geometry.
-        :return: vertex coordinates, faces (as lists of vertex indices)
+        :param z: z coordinate of connection
+        :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :return: Object3D
         :type z: float
-        :type extrude_height: float
         :type include_bottom_face: bool
         """
-        boundary_coords = self._generate_shape().boundary.coords
-        # Perform extrusion
-        top_vertices, bottom_vertices = [], []
-        for vertex in boundary_coords:
-            bottom_vertices.append([vertex[0], vertex[1], z])
-            top_vertices.append([vertex[0], vertex[1], z+extrude_height])
-        vertices, faces = [], []
-        vertices += top_vertices
-        edge_size = len(top_vertices)
-        faces += [[i+1 for i in range(edge_size)]]
-        if extrude_height != 0:
-            vertices += bottom_vertices
-            faces += [[i+1, i+2, i+edge_size+2, i+edge_size+1] for i in range(edge_size-1)]
-            if include_bottom_face:
-                faces += [[i+edge_size+1 for i in range(edge_size)]]
-        return vertices, faces
-
-    def generate_obj_text(self, vertex_count=0):
-        """
-        Generates Wavefront-OBJ file contents for this object, assuming vertex_count previous vertices.
-
-        :param vertex_count: number of vertices already present in OBJ file.
-        :return: obj text contents, new vertex_count
-        :type vertex_count: int
-        """
-        content = ""
-        via_lane = self.parent_net._get_lane(self.via)
-        from_lane = self.parent_net._get_edge(self.from_edge).get_lane(int(self.from_lane))
-        to_lane = self.parent_net._get_edge(self.to_edge).get_lane(int(self.to_lane))
+        shape = self._generate_shape()
+        from_lane = self.parent_net._get_edge(self.from_edge).get_lane(int(self.from_lane))  # type: _Lane
+        to_lane = self.parent_net._get_edge(self.to_edge).get_lane(int(self.to_lane))  # type: _Lane
         h = 0.15 if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian" else 0
         material = "pedestrian" if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian" else "connection"
-        vertices, faces = self._get_3d_description(extrude_height=h)
-        content += "o " + via_lane.id
-        content += "\nusemtl " + material
-        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
-        content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
-        content += "\n\n"
-        vertex_count += len(vertices)
-        return content, vertex_count
+        return _Utils.Object3D.from_shape(shape, "cxn_via_"+self.via, material, z=z, extrude_height=h, include_bottom_face=include_bottom_face)
 
     def plot_alignment(self, ax):
         """
@@ -670,25 +585,19 @@ class _Junction:
         else:
             return self.get_request_by_index(index)
 
-    def generate_obj_text(self, vertex_count=0):
+    def get_as_3d_object(self, z=0, extrude_height=0, include_bottom_face=False):
         """
-        Generates Wavefront-OBJ file contents for this object, assuming vertex_count previous vertices.
+        Generates an Object3D from the junction.
 
-        :param vertex_count: number of vertices already present in OBJ file.
-        :return: obj text contents, new vertex_count
-        :type vertex_count: int
+        :param z: z coordinate of junction
+        :param extrude_height: distance by which to extrude the junction
+        :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :return: Object3D
+        :type z: float
+        :type extrude_height: float
+        :type include_bottom_face: bool
         """
-        vertices_2d = self.shape.boundary.coords
-        vertices = [[vertex[0], vertex[1], 0] for vertex in vertices_2d]
-        face = [i+1 for i in range(len(vertices))]
-        content = ""
-        content += "o " + self.id
-        content += "\nusemtl junction"
-        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
-        content += "\nf " + " ".join([str(v + vertex_count) for v in face])
-        content += "\n\n"
-        vertex_count += len(vertices)
-        return content, vertex_count
+        return _Utils.Object3D.from_shape(self.shape, self.id, "junction", z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
 
     def plot(self, ax, **kwargs):
         """
@@ -843,30 +752,25 @@ class Net:
         if style is not None:
             set_style(style)
         set_stripe_width_scale(stripe_width_scale)
-        content = ""
-        vertex_count = 0
+        objects = []
         for edge in self.edges:
             if edge.function == "internal":
                 continue
             for lane in edge.lanes:
                 if edge.function not in ["crossing", "walkingarea"]:
-                    lane_content, vertex_count = lane.generate_obj_text(vertex_count)
-                    content += lane_content
-                markings_content, vertex_count = lane.generate_markings_obj_text(vertex_count=vertex_count)
-                content += markings_content
+                    objects.append(lane.get_as_3d_object())
+                objects += lane.get_markings_as_3d_objects()
         for junction in self.junctions:
             if junction.shape is not None:
-                junction_content, vertex_count = junction.generate_obj_text(vertex_count)
-                content += junction_content
+                objects.append(junction.get_as_3d_object())
         for connection in self.connections:
             if connection.via is not None:
                 via_lane = self._get_lane(connection.via)
                 from_lane = self._get_edge(connection.from_edge).get_lane(int(connection.from_lane))
                 to_lane = self._get_edge(connection.to_edge).get_lane(int(connection.to_lane))
                 if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian":
-                    lane_content, vertex_count = connection.generate_obj_text(vertex_count)
-                    content += lane_content
-        return content
+                    objects.append(connection.get_as_3d_object())
+        return _Utils.generate_obj_text_from_objects(objects)
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
              plot_stop_lines=None, lane_kwargs=None, lane_marking_kwargs=None, junction_kwargs=None, **kwargs):
