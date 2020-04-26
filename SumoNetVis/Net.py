@@ -446,23 +446,25 @@ class _Lane:
 
 
 class _Connection:
-    def __init__(self, attrib, parent_net=None):
+    def __init__(self, attrib):
         """
         Initialize a _Connection object.
 
         :param attrib: dict of all of the connection attributes
-        :param parent_net: parent Net object. Used to access the referenced Lane objects.
         :type attrib: dict
-        :type parent_net: Net
         """
-        self.from_edge = attrib["from"]
-        self.to_edge = attrib["to"]
-        self.from_lane = attrib["fromLane"]
-        self.to_lane = attrib["toLane"]
-        self.via = attrib["via"] if "via" in attrib else None
+        self.from_edge_id = attrib["from"]
+        self.to_edge_id = attrib["to"]
+        self.from_edge = None
+        self.to_edge = None
+        self.from_lane_index = int(attrib["fromLane"])
+        self.to_lane_index = int(attrib["toLane"])
+        self.from_lane = None
+        self.to_lane = None
+        self.via_id = attrib["via"] if "via" in attrib else None
+        self.via_lane = None
         self.dir = attrib["dir"]
         self.state = attrib["state"]
-        self.parent_net = parent_net
 
         if "shape" in attrib:
             coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
@@ -479,19 +481,15 @@ class _Connection:
 
         :return: Polygon of the Connection shape
         """
-        if type(self.parent_net) != Net:
-            raise ReferenceError("Valid reference to parent network required.")
-        # Get relevant lane objects
-        via_lane = self.parent_net._get_lane(self.via)  # type: _Lane
-        from_lane = self.parent_net._get_edge(self.from_edge).get_lane(int(self.from_lane))  # type: _Lane
-        to_lane = self.parent_net._get_edge(self.to_edge).get_lane(int(self.to_lane))  # type: _Lane
+        if self.from_lane is None or self.to_lane is None or self.via_lane is None:
+            raise ReferenceError("Valid reference to from-, to-, and via-lanes required to generate connection shape.")
         # Get lane edges
-        from_lane_left_edge = [list(c) for c in from_lane.alignment.parallel_offset(from_lane.width/2, side="left").coords]
-        from_lane_right_edge = [list(c) for c in from_lane.alignment.parallel_offset(from_lane.width/2, side="right").coords]
-        to_lane_left_edge = [list(c) for c in to_lane.alignment.parallel_offset(to_lane.width/2, side="left").coords]
-        to_lane_right_edge = [list(c) for c in to_lane.alignment.parallel_offset(to_lane.width/2, side="right").coords]
-        left_edge = [list(c) for c in via_lane.alignment.parallel_offset(from_lane.width/2, side="left").coords]
-        right_edge = [list(c) for c in via_lane.alignment.parallel_offset(from_lane.width/2, side="right").coords]
+        from_lane_left_edge = [list(c) for c in self.from_lane.alignment.parallel_offset(self.from_lane.width/2, side="left").coords]
+        from_lane_right_edge = [list(c) for c in self.from_lane.alignment.parallel_offset(self.from_lane.width/2, side="right").coords]
+        to_lane_left_edge = [list(c) for c in self.to_lane.alignment.parallel_offset(self.to_lane.width/2, side="left").coords]
+        to_lane_right_edge = [list(c) for c in self.to_lane.alignment.parallel_offset(self.to_lane.width/2, side="right").coords]
+        left_edge = [list(c) for c in self.via_lane.alignment.parallel_offset(self.from_lane.width/2, side="left").coords]
+        right_edge = [list(c) for c in self.via_lane.alignment.parallel_offset(self.from_lane.width/2, side="right").coords]
         right_edge.reverse()
         # Generate coordinates
         left_coords = [from_lane_left_edge[-1]] + left_edge[1:-1] + [to_lane_left_edge[0]]
@@ -511,11 +509,9 @@ class _Connection:
         :type include_bottom_face: bool
         """
         shape = self._generate_shape()
-        from_lane = self.parent_net._get_edge(self.from_edge).get_lane(int(self.from_lane))  # type: _Lane
-        to_lane = self.parent_net._get_edge(self.to_edge).get_lane(int(self.to_lane))  # type: _Lane
-        h = 0.15 if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian" else 0
-        material = "pedestrian" if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian" else "connection"
-        return _Utils.Object3D.from_shape(shape, "cxn_via_"+self.via, material, z=z, extrude_height=h, include_bottom_face=include_bottom_face)
+        h = 0.15 if self.from_lane.lane_type() == "pedestrian" and self.to_lane.lane_type() == "pedestrian" else 0
+        material = "pedestrian" if self.from_lane.lane_type() == "pedestrian" and self.to_lane.lane_type() == "pedestrian" else "connection"
+        return _Utils.Object3D.from_shape(shape, "cxn_via_" + self.via_id, material, z=z, extrude_height=h, include_bottom_face=include_bottom_face)
 
     def plot_alignment(self, ax):
         """
@@ -649,7 +645,7 @@ class Net:
                         junction.append_request(req)
                 self.junctions.append(junction)
             elif obj.tag == "connection":
-                connection = _Connection(obj.attrib, self)
+                connection = _Connection(obj.attrib)
                 self.connections.append(connection)
         self._link_objects()
 
@@ -677,19 +673,29 @@ class Net:
                 lane.incoming_connections = self._get_connections_to_lane(lane.id)
                 lane.outgoing_connections = self._get_connections_from_lane(lane.id)
                 for cxn in lane.outgoing_connections:
-                    if cxn.via is not None:
+                    if cxn.via_id is not None:
                         reqs = []
                         try:
-                            req = junction.get_request_by_int_lane(cxn.via)
+                            req = junction.get_request_by_int_lane(cxn.via_id)
                         except IndexError:  # if no request found for via, look one level deeper
-                            cxns_internal = self._get_connections_from_lane(cxn.via)
+                            cxns_internal = self._get_connections_from_lane(cxn.via_id)
                             for cxni in cxns_internal:
-                                req = junction.get_request_by_int_lane(cxni.via)
+                                req = junction.get_request_by_int_lane(cxni.via_id)
                                 reqs.append(req)
                         else:
                             reqs.append(req)
                         for req in reqs:
                             lane.requests.append(req)
+        # link edges and lanes to connections
+        for connection in self.connections:
+            if connection.via_id is not None:
+                connection.via_lane = self._get_lane(connection.via_id)
+            connection.from_edge = self._get_edge(connection.from_edge_id)
+            if connection.from_edge is not None:
+                connection.from_lane = connection.from_edge.get_lane(connection.from_lane_index)
+            connection.to_edge = self._get_edge(connection.to_edge_id)
+            if connection.to_edge is not None:
+                connection.to_lane = connection.to_edge.get_lane(connection.to_lane_index)
 
     def _get_extents(self):
         lane_geoms = []
@@ -707,21 +713,21 @@ class Net:
     def _get_connections_from_lane(self, lane_id):
         cxns = []
         for connection in self.connections:
-            if connection.from_edge + "_" + connection.from_lane == lane_id:
+            if connection.from_edge_id + "_" + str(connection.from_lane_index) == lane_id:
                 cxns.append(connection)
         return cxns
 
     def _get_connections_to_lane(self, lane_id):
         cxns = []
         for connection in self.connections:
-            if connection.to_edge + "_" + connection.to_lane == lane_id:
+            if connection.to_edge_id + "_" + str(connection.to_lane_index) == lane_id:
                 cxns.append(connection)
         return cxns
 
     def _get_connections_via_lane(self, via):
         cxns = []
         for connection in self.connections:
-            if connection.via == via:
+            if connection.via_id == via:
                 cxns.append(connection)
         return cxns
 
@@ -764,11 +770,8 @@ class Net:
             if junction.shape is not None:
                 objects.append(junction.get_as_3d_object())
         for connection in self.connections:
-            if connection.via is not None:
-                via_lane = self._get_lane(connection.via)
-                from_lane = self._get_edge(connection.from_edge).get_lane(int(connection.from_lane))
-                to_lane = self._get_edge(connection.to_edge).get_lane(int(connection.to_lane))
-                if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian":
+            if connection.via_id is not None:
+                if connection.from_lane.lane_type() == "pedestrian" and connection.to_lane.lane_type() == "pedestrian":
                     objects.append(connection.get_as_3d_object())
         return _Utils.generate_obj_text_from_objects(objects)
 
