@@ -53,7 +53,6 @@ class Object3D:
         # calculate vertices and faces
         for outline in outlines:
             # generate coordinates of top and bottom face
-            bottom_vertices = [[v[0], v[1], z] for v in outline]
             top_vertices = [[v[0], v[1], z+extrude_height] for v in outline]
             v_offset = len(vertices)
             edge_len = len(top_vertices)
@@ -62,6 +61,7 @@ class Object3D:
             faces += [[i+1 for i in range(v_offset, v_offset+edge_len)]]
             # perform extrusion
             if extrude_height != 0:
+                bottom_vertices = [[v[0], v[1], z] for v in outline]
                 vertices += bottom_vertices
                 # add side faces
                 faces += [[i+1, i+2, i+edge_len+2, i+edge_len+1] for i in range(v_offset, v_offset+edge_len-1)]
