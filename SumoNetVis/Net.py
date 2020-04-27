@@ -618,8 +618,8 @@ class Net:
         :param file: path to Sumo network file
         :type file: str
         """
-        self.edges = []
-        self.junctions = []
+        self.edges = dict()
+        self.junctions = dict()
         self.connections = []
         net = ET.parse(file).getroot()
         for obj in net:
@@ -636,14 +636,14 @@ class Net:
                             if laneChild.tag == "stopOffset":
                                 lane.append_stop_offset(laneChild.attrib)
                         edge.append_lane(lane)
-                self.edges.append(edge)
+                self.edges[edge.id] = edge
             elif obj.tag == "junction":
                 junction = _Junction(obj.attrib)
                 for jnChild in obj:
                     if jnChild.tag == "request":
                         req = _Request(jnChild.attrib)
                         junction.append_request(req)
-                self.junctions.append(junction)
+                self.junctions[junction.id] = junction
             elif obj.tag == "connection":
                 connection = _Connection(obj.attrib)
                 self.connections.append(connection)
@@ -651,11 +651,11 @@ class Net:
 
     def _link_objects(self):
         # link junctions to edges
-        for edge in self.edges:
-            edge.from_junction = self._get_junction(edge.from_junction_id)
-            edge.to_junction = self._get_junction(edge.to_junction_id)
+        for edge in self.edges.values():
+            edge.from_junction = self.junctions.get(edge.from_junction_id, None)
+            edge.to_junction = self.junctions.get(edge.to_junction_id, None)
         # make junction-related links
-        for junction in self.junctions:
+        for junction in self.junctions.values():
             if junction.type == "internal":
                 continue
             # link incoming lanes to junction
@@ -690,25 +690,20 @@ class Net:
         for connection in self.connections:
             if connection.via_id is not None:
                 connection.via_lane = self._get_lane(connection.via_id)
-            connection.from_edge = self._get_edge(connection.from_edge_id)
+            connection.from_edge = self.edges.get(connection.from_edge_id, None)
             if connection.from_edge is not None:
                 connection.from_lane = connection.from_edge.get_lane(connection.from_lane_index)
-            connection.to_edge = self._get_edge(connection.to_edge_id)
+            connection.to_edge = self.edges.get(connection.to_edge_id, None)
             if connection.to_edge is not None:
                 connection.to_lane = connection.to_edge.get_lane(connection.to_lane_index)
 
     def _get_extents(self):
         lane_geoms = []
-        for edge in self.edges:
+        for edge in self.edges.values():
             for lane in edge.lanes:
                 lane_geoms.append(lane.shape)
         polygons = MultiPolygon(lane_geoms)
         return polygons.bounds
-
-    def _get_junction(self, junction_id):
-        for junction in self.junctions:
-            if junction.id == junction_id:
-                return junction
 
     def _get_connections_from_lane(self, lane_id):
         cxns = []
@@ -731,15 +726,10 @@ class Net:
                 cxns.append(connection)
         return cxns
 
-    def _get_edge(self, edge_id):
-        for edge in self.edges:
-            if edge.id == edge_id:
-                return edge
-
     def _get_lane(self, lane_id):
         edge_id = "_".join(lane_id.split("_")[:-1])
         lane_num = int(lane_id.split("_")[-1])
-        edge = self._get_edge(edge_id)
+        edge = self.edges.get(edge_id, None)
         return edge.get_lane(lane_num) if edge is not None else None
 
     def generate_obj_text(self, style=None, stripe_width_scale=1):
@@ -759,14 +749,14 @@ class Net:
             set_style(style)
         set_stripe_width_scale(stripe_width_scale)
         objects = []
-        for edge in self.edges:
+        for edge in self.edges.values():
             if edge.function == "internal":
                 continue
             for lane in edge.lanes:
                 if edge.function not in ["crossing", "walkingarea"]:
                     objects.append(lane.get_as_3d_object())
                 objects += lane.get_markings_as_3d_objects()
-        for junction in self.junctions:
+        for junction in self.junctions.values():
             if junction.shape is not None:
                 objects.append(junction.get_as_3d_object())
         for connection in self.connections:
@@ -819,10 +809,10 @@ class Net:
         ymin, ymax = ax.get_ylim()
         bounds = [[xmin, ymax], [xmax, ymax], [xmax, ymin], [xmin, ymin]]
         window = Polygon(bounds)
-        for edge in self.edges:
+        for edge in self.edges.values():
             if edge.function != "internal" and (not clip_to_limits or edge.intersects(window)):
                 edge.plot(ax, {"zorder": -100, **lane_kwargs}, {"zorder": -90, **lane_marking_kwargs}, **kwargs)
-        for junction in self.junctions:
+        for junction in self.junctions.values():
             if not clip_to_limits or (junction.shape is not None and junction.shape.intersects(window)):
                 junction.plot(ax, **{"zorder": -110, **kwargs, **junction_kwargs})
 
