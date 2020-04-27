@@ -666,7 +666,7 @@ class Net:
             # link internal lanes to junction
             for i in junction.intLane_ids:
                 intLane = self._get_lane(i)
-                if i is not None:
+                if intLane is not None:
                     junction.intLanes.append(intLane)
             # link connections and requests to incoming lanes
             for lane in junction.incLanes:
