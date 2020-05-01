@@ -151,6 +151,15 @@ class _Edge:
 
 class _LaneMarking:
     def __init__(self, alignment, linewidth, color, dashes, purpose=None):
+        """
+        Initialize a lane marking object.
+
+        :param alignment: the centerline alignment of the lane marking
+        :param linewidth: the width of the marking
+        :param color: the color of the marking
+        :param dashes: dash pattern of the marking
+        :param purpose: string describing what function the marking serves
+        """
         self.purpose = "" if purpose is None else purpose
         self.alignment = alignment
         self.linewidth = linewidth
@@ -158,6 +167,14 @@ class _LaneMarking:
         self.dashes = dashes
 
     def plot(self, ax, **kwargs):
+        """
+        Plots the lane marking.
+
+        :param ax: matplotlib Axes object
+        :param kwargs: kwargs to pass to Line2D
+        :return: None
+        :type ax: plt.Axes
+        """
         x, y = zip(*self.alignment.coords)
         line = _Utils.LineDataUnits(x, y, linewidth=self.linewidth, color=self.color, dashes=self.dashes, **kwargs)
         ax.add_line(line)
@@ -287,6 +304,13 @@ class _Lane:
         return self.parentEdge.lane_count() - self.index - 1
 
     def append_stop_offset(self, attrib):
+        """
+        Add a stop offset to the lane.
+
+        :param attrib: dict of all the stop offset attributes
+        :return: None
+        :type attrib: dict
+        """
         value = float(attrib["value"])
         vc = attrib["vClasses"] if "vClasses" in attrib else ""
         exceptions = attrib["exceptions"] if "exceptions" in attrib else ""
@@ -294,6 +318,11 @@ class _Lane:
         self.stop_offsets.append((value, vClasses))
 
     def get_stop_line_locations(self):
+        """
+        Return a list of stop line locations for the lane based on the stop offsets of the lane and its parent Edge.
+
+        :return: list of stop line locations (distance from end of lane)
+        """
         if len(self.stop_offsets) > 0:
             stop_offsets = self.stop_offsets
         else:
@@ -308,6 +337,11 @@ class _Lane:
         return stop_line_locations
 
     def _requires_stop_line(self):
+        """
+        Determines whether the Lane should be drawn with a stop line based on its priority and to-Junction.
+
+        :return: True if Lane should be drawn with stop line, else False
+        """
         if self.parentEdge.to_junction.type in ["internal", "zipper"]:
             return False
         if self.parentEdge.to_junction.type == "always_stop":
@@ -564,16 +598,36 @@ class _Junction:
                 self.shape = Polygon(coords)
 
     def append_request(self, request):
+        """
+        Add a Request object to the Junction.
+
+        :param request: request to add to the junction
+        :return: None
+        :type request: _Request
+        """
         request.parentJunction = self
         self._requests.append(request)
 
     def get_request_by_index(self, index):
+        """
+        Returns the Request with the given index.
+
+        :param index: index of Request to get
+        :return: Request with given index
+        :type index: int
+        """
         for req in self._requests:
             if req.index == index:
                 return req
         raise IndexError("Junction " + self.id + " has no request with index " + str(index))
 
     def get_request_by_int_lane(self, lane_id):
+        """
+        Returns the Request corresponding to the internal lane with the specified id.
+
+        :param lane_id: id of the internal lane for which to get the corresponding Request
+        :return: Request corresponding to the specified internal lane
+        """
         try:
             index = self.intLane_ids.index(lane_id)
         except ValueError as err:
@@ -650,6 +704,11 @@ class Net:
         self._link_objects()
 
     def _link_objects(self):
+        """
+        Adds links between objects in the Network as necessary for certain functions.
+
+        :return: None
+        """
         # link junctions to edges
         for edge in self.edges.values():
             edge.from_junction = self.junctions.get(edge.from_junction_id, None)
