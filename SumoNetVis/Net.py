@@ -149,6 +149,69 @@ class _Edge:
             lane.plot_lane_markings(ax, **{**kwargs, **lane_marking_kwargs})
 
 
+class _LaneMarking:
+    def __init__(self, alignment, linewidth, color, dashes, purpose=None):
+        """
+        Initialize a lane marking object.
+
+        :param alignment: the centerline alignment of the lane marking
+        :param linewidth: the width of the marking
+        :param color: the color of the marking
+        :param dashes: dash pattern of the marking
+        :param purpose: string describing what function the marking serves
+        """
+        self.purpose = "" if purpose is None else purpose
+        self.alignment = alignment
+        self.linewidth = linewidth
+        self.color = color
+        self.dashes = dashes
+
+    def plot(self, ax, **kwargs):
+        """
+        Plots the lane marking.
+
+        :param ax: matplotlib Axes object
+        :param kwargs: kwargs to pass to Line2D
+        :return: None
+        :type ax: plt.Axes
+        """
+        x, y = zip(*self.alignment.coords)
+        line = _Utils.LineDataUnits(x, y, linewidth=self.linewidth, color=self.color, dashes=self.dashes, **kwargs)
+        ax.add_line(line)
+
+    def get_as_shape(self, cap_style=CAP_STYLE.flat):
+        """
+        Get marking as a shapely Polygon or MultiPolygon
+
+        :param cap_style: cap style to use when performing buffer
+        :return: shapely Polygon or MultiPolygon
+        """
+        if self.dashes[1] == 0:  # if solid line
+            buffer = self.alignment.buffer(self.linewidth / 2, cap_style=cap_style)
+        else:  # if dashed line
+            buffer = MultiPolygon()
+            dash_length, gap = self.dashes
+            for s in np.arange(0, self.alignment.length, dash_length + gap):
+                assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for OBJ export of dashed lines."
+                dash_segment = ops.substring(self.alignment, s, min(s + dash_length, self.alignment.length))
+                buffer = buffer.union(dash_segment.buffer(self.linewidth / 2, cap_style=cap_style))
+        return buffer
+
+    def get_as_3d_object(self, z=0.001, extrude_height=0, include_bottom_face=False):
+        """
+        Generates an Object3D from the marking.
+
+        :param z: z coordinate of marking
+        :param extrude_height: distance by which to extrude the marking
+        :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :return: Object3D
+        :type z: float
+        :type extrude_height: float
+        :type include_bottom_face: bool
+        """
+        return _Utils.Object3D.from_shape(self.get_as_shape(), self.purpose+"_marking", self.color+"_marking", z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
+
+
 class _Lane:
     def __init__(self, attrib):
         """
@@ -241,6 +304,13 @@ class _Lane:
         return self.parentEdge.lane_count() - self.index - 1
 
     def append_stop_offset(self, attrib):
+        """
+        Add a stop offset to the lane.
+
+        :param attrib: dict of all the stop offset attributes
+        :return: None
+        :type attrib: dict
+        """
         value = float(attrib["value"])
         vc = attrib["vClasses"] if "vClasses" in attrib else ""
         exceptions = attrib["exceptions"] if "exceptions" in attrib else ""
@@ -248,6 +318,11 @@ class _Lane:
         self.stop_offsets.append((value, vClasses))
 
     def get_stop_line_locations(self):
+        """
+        Return a list of stop line locations for the lane based on the stop offsets of the lane and its parent Edge.
+
+        :return: list of stop line locations (distance from end of lane)
+        """
         if len(self.stop_offsets) > 0:
             stop_offsets = self.stop_offsets
         else:
@@ -262,6 +337,11 @@ class _Lane:
         return stop_line_locations
 
     def _requires_stop_line(self):
+        """
+        Determines whether the Lane should be drawn with a stop line based on its priority and to-Junction.
+
+        :return: True if Lane should be drawn with stop line, else False
+        """
         if self.parentEdge.to_junction.type in ["internal", "zipper"]:
             return False
         if self.parentEdge.to_junction.type == "always_stop":
@@ -271,122 +351,36 @@ class _Lane:
                 return True
         return False
 
-    def _get_marking_3d_description(self, marking, z=0.001):
+    def get_markings_as_3d_objects(self, z_lane=0, extrude_height=0, include_bottom_face=False):
         """
-        Generates 3D vertices and faces for export of lane markings to OBJ format.
+        Generates list of Object3D objects from the lane markings.
 
-        :param z: the desired z coordinate for the lane markings. Defaults to 0.001.
-        :return: vertex coordinates, faces (as lists of vertex indices)
-        :type z: float
-        """
-        if marking["dashes"][1] == 0:  # if solid line
-            buffer = marking["line"].buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat)
-            if buffer.geometryType() == "MultiPolygon":
-                outlines = [polygon.boundary.coords for polygon in buffer]
-            elif buffer.geometryType() == "Polygon":
-                outlines = [buffer.boundary.coords]
-            else:
-                raise TypeError("Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
-            for vertices_2d in outlines:
-                vertices = [[v[0], v[1], z] for v in vertices_2d]
-                faces = [[i+1 for i in range(len(vertices))]]
-            return vertices, faces
-        else:  # if dashed line
-            vertices, faces = [], []
-            dash_length, gap = marking["dashes"]
-            vertex_count = 0
-            for s in np.arange(0, marking["line"].length, dash_length+gap):
-                assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for OBJ export of dashed lines."
-                dash_segment = ops.substring(marking["line"], s, min(s+dash_length, marking["line"].length))
-                buffer = dash_segment.buffer(marking["lw"]/2, cap_style=CAP_STYLE.flat)
-                if buffer.geometryType() == "MultiPolygon":
-                    outlines = [polygon.boundary.coords for polygon in buffer]
-                elif buffer.geometryType() == "Polygon":
-                    outlines = [buffer.boundary.coords]
-                else:
-                    raise TypeError(
-                        "Unexpected geometry type " + buffer.geometryType() + " created by buffer operation.")
-                for outline in outlines:
-                    vertices += [[v[0], v[1], z] for v in outline]
-                    faces.append([i+vertex_count+1 for i in range(len(outline))])
-                    vertex_count += len(outline)
-            return vertices, faces
-
-    def generate_markings_obj_text(self, vertex_count=0):
-        """
-        Generates Wavefront-OBJ file contents for this lane's markings, assuming vertex_count previous vertices.
-
-        :param vertex_count: number of vertices already present in OBJ file.
-        :return: obj text contents, new vertex_count
-        :type vertex_count: int
-        """
-        content = ""
-        for i, marking in enumerate(self._guess_lane_markings()):
-            vertices, faces = self._get_marking_3d_description(marking)
-            content += "o " + self.id + "_marking" + str(i)
-            content += "\nusemtl marking_" + marking["color"]
-            content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
-            content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
-            content += "\n\n"
-            vertex_count += len(vertices)
-        return content, vertex_count
-
-    def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
-        """
-        Generates 3D vertices and faces for export to OBJ format.
-
-        :param z: the desired z coordinate for the base of the object. Defaults to zero.
-        :param extrude_height: distance by which to extrude the face vertically.
-        :param include_bottom_face: whether or not to include the bottom face of the extruded geometry.
-        :return: vertex coordinates, faces (as lists of vertex indices)
-        :type z: float
+        :param z_lane: z coordinate of the lane. Markings will be generated slightly above this to prevent z fighting.
+        :param extrude_height: distance by which to extrude the markings
+        :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :return: Object3D
+        :type z_lane: float
         :type extrude_height: float
         :type include_bottom_face: bool
         """
-        vertices_2d = self.shape.boundary.coords
-        top_vertices, bottom_vertices = [], []
-        for vertex in vertices_2d:
-            bottom_vertices.append([vertex[0], vertex[1], z])
-            top_vertices.append([vertex[0], vertex[1], z+extrude_height])
-        vertices, faces = [], []
-        vertices += top_vertices
-        edge_size = len(top_vertices)
-        faces += [[i+1 for i in range(edge_size)]]
-        if extrude_height != 0:
-            vertices += bottom_vertices
-            faces += [[i+1, i+2, i+edge_size+2, i+edge_size+1] for i in range(edge_size-1)]
-            if include_bottom_face:
-                faces += [[i+edge_size+1 for i in range(edge_size)]]
-        return vertices, faces
+        objects = []
+        for marking in self._guess_lane_markings():
+            z = z_lane+0.002 if marking.purpose == "crossing" else z_lane+0.001
+            objects.append(marking.get_as_3d_object(z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face))
+        return objects
 
-    def generate_obj_text(self, vertex_count=0):
+    def get_as_3d_object(self, z=0, include_bottom_face=False):
         """
-        Generates Wavefront-OBJ file contents for this object, assuming vertex_count previous vertices.
+        Generates an Object3D from the lane.
 
-        :param vertex_count: number of vertices already present in OBJ file.
-        :return: obj text contents, new vertex_count
-        :type vertex_count: int
+        :param z: z coordinate of junction
+        :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :return: Object3D
+        :type z: float
+        :type include_bottom_face: bool
         """
-        content = ""
-        h = 0.15 if self.allows == "pedestrian" else 0
-        vertices, faces = self._get_3d_description(extrude_height=h)
-        content += "o " + self.id
-        content += "\nusemtl " + self.lane_type()
-        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
-        content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
-        content += "\n\n"
-        vertex_count += len(vertices)
-        return content, vertex_count
-
-    def _draw_lane_marking(self, ax, line, width, color, dashes, **kwargs):
-        try:
-            x, y = zip(*line.coords)
-            line = _Utils.LineDataUnits(x, y, linewidth=width, color=color, dashes=dashes, **kwargs)
-            ax.add_line(line)
-        except NotImplementedError:
-            print("Can't print center stripe for lane " + self.id)
-        except ValueError:
-            print("Generated lane marking geometry is empty for lane " + self.id)
+        h = 0.15 if self.lane_type() == "pedestrian" else 0
+        return _Utils.Object3D.from_shape(self.shape, self.id, self.lane_type()+"_lane", z=0, extrude_height=h)
 
     def _guess_lane_markings(self):
         """
@@ -399,7 +393,7 @@ class _Lane:
             return markings
         if self.parentEdge.function == "crossing":
             color, dashes = "w", (0.5, 0.5)
-            markings.append({"line": self.alignment, "lw": self.width, "color": color, "dashes": dashes})
+            markings.append(_LaneMarking(self.alignment, self.width, color, dashes, purpose="crossing"))
             return markings
         # US-style markings
         if LANE_MARKINGS_STYLE == USA_STYLE:
@@ -408,7 +402,7 @@ class _Lane:
             if self.inverse_lane_index() == 0:
                 leftEdge = self.alignment.parallel_offset(self.width/2-lw, side="left")
                 color, dashes = "y", (100, 0)
-                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center"))
             # Draw non-centerline markings
             else:
                 adjacent_lane = self.parentEdge.get_lane(self.index+1)
@@ -421,12 +415,12 @@ class _Lane:
                         dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
                     else:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
-                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane"))
             # draw outer lane marking if necessary
             if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width/2, side="right")
                 color, dashes = "w", (100, 0)
-                markings.append({"line": rightEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer"))
         # European-style markings
         elif LANE_MARKINGS_STYLE == EUR_STYLE:
             lw = 0.1 * STRIPE_WIDTH_SCALE_FACTOR
@@ -434,7 +428,7 @@ class _Lane:
             if self.inverse_lane_index() == 0:
                 leftEdge = self.alignment.parallel_offset(self.width/2, side="left")
                 color, dashes = "w", (100, 0)
-                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center"))
             # Draw non-centerline markings
             else:
                 adjacent_lane = self.parentEdge.get_lane(self.index + 1)
@@ -447,12 +441,12 @@ class _Lane:
                         dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
                     else:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
-                markings.append({"line": leftEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane"))
             # draw outer lane marking if necessary
             if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width / 2, side="right")
                 color, dashes = "w", (100, 0)
-                markings.append({"line": rightEdge, "lw": lw, "color": color, "dashes": dashes})
+                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer"))
         # Stop line markings (all styles)
         slw = 0.5
         if PLOT_STOP_LINES and self.allows not in ["pedestrian", "ship"] and self._requires_stop_line():
@@ -465,7 +459,7 @@ class _Lane:
                 end_left = end_cl.parallel_offset(self.width / 2, side="left")
                 end_right = end_cl.parallel_offset(self.width / 2, side="right")
                 stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
-                markings.append({"line": stop_line, "lw": slw, "color": "w", "dashes": (100, 0)})
+                markings.append(_LaneMarking(stop_line, slw, "w", (100, 0), purpose="stopline"))
         return markings
 
     def plot_lane_markings(self, ax, **kwargs):
@@ -477,27 +471,34 @@ class _Lane:
         :type ax: plt.Axes
         """
         for marking in self._guess_lane_markings():
-            self._draw_lane_marking(ax, marking["line"], marking["lw"], marking["color"], marking["dashes"], **kwargs)
+            try:
+                marking.plot(ax, **kwargs)
+            except NotImplementedError:
+                print("Can't print center stripe for lane " + self.id)
+            except ValueError:
+                print("Generated lane marking geometry is empty for lane " + self.id)
 
 
 class _Connection:
-    def __init__(self, attrib, parent_net=None):
+    def __init__(self, attrib):
         """
         Initialize a _Connection object.
 
         :param attrib: dict of all of the connection attributes
-        :param parent_net: parent Net object. Used to access the referenced Lane objects.
         :type attrib: dict
-        :type parent_net: Net
         """
-        self.from_edge = attrib["from"]
-        self.to_edge = attrib["to"]
-        self.from_lane = attrib["fromLane"]
-        self.to_lane = attrib["toLane"]
-        self.via = attrib["via"] if "via" in attrib else None
+        self.from_edge_id = attrib["from"]
+        self.to_edge_id = attrib["to"]
+        self.from_edge = None
+        self.to_edge = None
+        self.from_lane_index = int(attrib["fromLane"])
+        self.to_lane_index = int(attrib["toLane"])
+        self.from_lane = None
+        self.to_lane = None
+        self.via_id = attrib["via"] if "via" in attrib else None
+        self.via_lane = None
         self.dir = attrib["dir"]
         self.state = attrib["state"]
-        self.parent_net = parent_net
 
         if "shape" in attrib:
             coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
@@ -514,19 +515,15 @@ class _Connection:
 
         :return: Polygon of the Connection shape
         """
-        if type(self.parent_net) != Net:
-            raise ReferenceError("Valid reference to parent network required.")
-        # Get relevant lane objects
-        via_lane = self.parent_net._get_lane(self.via)  # type: _Lane
-        from_lane = self.parent_net._get_edge(self.from_edge).get_lane(int(self.from_lane))  # type: _Lane
-        to_lane = self.parent_net._get_edge(self.to_edge).get_lane(int(self.to_lane))  # type: _Lane
+        if self.from_lane is None or self.to_lane is None or self.via_lane is None:
+            raise ReferenceError("Valid reference to from-, to-, and via-lanes required to generate connection shape.")
         # Get lane edges
-        from_lane_left_edge = [list(c) for c in from_lane.alignment.parallel_offset(from_lane.width/2, side="left").coords]
-        from_lane_right_edge = [list(c) for c in from_lane.alignment.parallel_offset(from_lane.width/2, side="right").coords]
-        to_lane_left_edge = [list(c) for c in to_lane.alignment.parallel_offset(to_lane.width/2, side="left").coords]
-        to_lane_right_edge = [list(c) for c in to_lane.alignment.parallel_offset(to_lane.width/2, side="right").coords]
-        left_edge = [list(c) for c in via_lane.alignment.parallel_offset(from_lane.width/2, side="left").coords]
-        right_edge = [list(c) for c in via_lane.alignment.parallel_offset(from_lane.width/2, side="right").coords]
+        from_lane_left_edge = [list(c) for c in self.from_lane.alignment.parallel_offset(self.from_lane.width/2, side="left").coords]
+        from_lane_right_edge = [list(c) for c in self.from_lane.alignment.parallel_offset(self.from_lane.width/2, side="right").coords]
+        to_lane_left_edge = [list(c) for c in self.to_lane.alignment.parallel_offset(self.to_lane.width/2, side="left").coords]
+        to_lane_right_edge = [list(c) for c in self.to_lane.alignment.parallel_offset(self.to_lane.width/2, side="right").coords]
+        left_edge = [list(c) for c in self.via_lane.alignment.parallel_offset(self.from_lane.width/2, side="left").coords]
+        right_edge = [list(c) for c in self.via_lane.alignment.parallel_offset(self.from_lane.width/2, side="right").coords]
         right_edge.reverse()
         # Generate coordinates
         left_coords = [from_lane_left_edge[-1]] + left_edge[1:-1] + [to_lane_left_edge[0]]
@@ -535,57 +532,20 @@ class _Connection:
         boundary_coords = right_coords + left_coords + [right_coords[0]]
         return Polygon(boundary_coords)
 
-    def _get_3d_description(self, z=0, extrude_height=0, include_bottom_face=False):
+    def get_as_3d_object(self, z=0, include_bottom_face=False):
         """
-        Generates 3D vertices and faces for export to OBJ format.
+        Generates an Object3D from the connection.
 
-        :param z: the desired z coordinate for the base of the object. Defaults to zero.
-        :param extrude_height: distance by which to extrude the face vertically.
-        :param include_bottom_face: whether or not to include the bottom face of the extruded geometry.
-        :return: vertex coordinates, faces (as lists of vertex indices)
+        :param z: z coordinate of connection
+        :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :return: Object3D
         :type z: float
-        :type extrude_height: float
         :type include_bottom_face: bool
         """
-        boundary_coords = self._generate_shape().boundary.coords
-        # Perform extrusion
-        top_vertices, bottom_vertices = [], []
-        for vertex in boundary_coords:
-            bottom_vertices.append([vertex[0], vertex[1], z])
-            top_vertices.append([vertex[0], vertex[1], z+extrude_height])
-        vertices, faces = [], []
-        vertices += top_vertices
-        edge_size = len(top_vertices)
-        faces += [[i+1 for i in range(edge_size)]]
-        if extrude_height != 0:
-            vertices += bottom_vertices
-            faces += [[i+1, i+2, i+edge_size+2, i+edge_size+1] for i in range(edge_size-1)]
-            if include_bottom_face:
-                faces += [[i+edge_size+1 for i in range(edge_size)]]
-        return vertices, faces
-
-    def generate_obj_text(self, vertex_count=0):
-        """
-        Generates Wavefront-OBJ file contents for this object, assuming vertex_count previous vertices.
-
-        :param vertex_count: number of vertices already present in OBJ file.
-        :return: obj text contents, new vertex_count
-        :type vertex_count: int
-        """
-        content = ""
-        via_lane = self.parent_net._get_lane(self.via)
-        from_lane = self.parent_net._get_edge(self.from_edge).get_lane(int(self.from_lane))
-        to_lane = self.parent_net._get_edge(self.to_edge).get_lane(int(self.to_lane))
-        h = 0.15 if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian" else 0
-        material = "pedestrian" if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian" else "connection"
-        vertices, faces = self._get_3d_description(extrude_height=h)
-        content += "o " + via_lane.id
-        content += "\nusemtl " + material
-        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
-        content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in faces])
-        content += "\n\n"
-        vertex_count += len(vertices)
-        return content, vertex_count
+        shape = self._generate_shape()
+        h = 0.15 if self.from_lane.lane_type() == "pedestrian" and self.to_lane.lane_type() == "pedestrian" else 0
+        material = "pedestrian" if self.from_lane.lane_type() == "pedestrian" and self.to_lane.lane_type() == "pedestrian" else "connection"
+        return _Utils.Object3D.from_shape(shape, "cxn_via_" + self.via_id, material, z=z, extrude_height=h, include_bottom_face=include_bottom_face)
 
     def plot_alignment(self, ax):
         """
@@ -638,16 +598,36 @@ class _Junction:
                 self.shape = Polygon(coords)
 
     def append_request(self, request):
+        """
+        Add a Request object to the Junction.
+
+        :param request: request to add to the junction
+        :return: None
+        :type request: _Request
+        """
         request.parentJunction = self
         self._requests.append(request)
 
     def get_request_by_index(self, index):
+        """
+        Returns the Request with the given index.
+
+        :param index: index of Request to get
+        :return: Request with given index
+        :type index: int
+        """
         for req in self._requests:
             if req.index == index:
                 return req
         raise IndexError("Junction " + self.id + " has no request with index " + str(index))
 
     def get_request_by_int_lane(self, lane_id):
+        """
+        Returns the Request corresponding to the internal lane with the specified id.
+
+        :param lane_id: id of the internal lane for which to get the corresponding Request
+        :return: Request corresponding to the specified internal lane
+        """
         try:
             index = self.intLane_ids.index(lane_id)
         except ValueError as err:
@@ -655,25 +635,19 @@ class _Junction:
         else:
             return self.get_request_by_index(index)
 
-    def generate_obj_text(self, vertex_count=0):
+    def get_as_3d_object(self, z=0, extrude_height=0, include_bottom_face=False):
         """
-        Generates Wavefront-OBJ file contents for this object, assuming vertex_count previous vertices.
+        Generates an Object3D from the junction.
 
-        :param vertex_count: number of vertices already present in OBJ file.
-        :return: obj text contents, new vertex_count
-        :type vertex_count: int
+        :param z: z coordinate of junction
+        :param extrude_height: distance by which to extrude the junction
+        :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :return: Object3D
+        :type z: float
+        :type extrude_height: float
+        :type include_bottom_face: bool
         """
-        vertices_2d = self.shape.boundary.coords
-        vertices = [[vertex[0], vertex[1], 0] for vertex in vertices_2d]
-        face = [i+1 for i in range(len(vertices))]
-        content = ""
-        content += "o " + self.id
-        content += "\nusemtl junction"
-        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in vertices])
-        content += "\nf " + " ".join([str(v + vertex_count) for v in face])
-        content += "\n\n"
-        vertex_count += len(vertices)
-        return content, vertex_count
+        return _Utils.Object3D.from_shape(self.shape, self.id, "junction", z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
 
     def plot(self, ax, **kwargs):
         """
@@ -698,8 +672,8 @@ class Net:
         :param file: path to Sumo network file
         :type file: str
         """
-        self.edges = []
-        self.junctions = []
+        self.edges = dict()
+        self.junctions = dict()
         self.connections = []
         net = ET.parse(file).getroot()
         for obj in net:
@@ -716,26 +690,31 @@ class Net:
                             if laneChild.tag == "stopOffset":
                                 lane.append_stop_offset(laneChild.attrib)
                         edge.append_lane(lane)
-                self.edges.append(edge)
+                self.edges[edge.id] = edge
             elif obj.tag == "junction":
                 junction = _Junction(obj.attrib)
                 for jnChild in obj:
                     if jnChild.tag == "request":
                         req = _Request(jnChild.attrib)
                         junction.append_request(req)
-                self.junctions.append(junction)
+                self.junctions[junction.id] = junction
             elif obj.tag == "connection":
-                connection = _Connection(obj.attrib, self)
+                connection = _Connection(obj.attrib)
                 self.connections.append(connection)
         self._link_objects()
 
     def _link_objects(self):
+        """
+        Adds links between objects in the Network as necessary for certain functions.
+
+        :return: None
+        """
         # link junctions to edges
-        for edge in self.edges:
-            edge.from_junction = self._get_junction(edge.from_junction_id)
-            edge.to_junction = self._get_junction(edge.to_junction_id)
+        for edge in self.edges.values():
+            edge.from_junction = self.junctions.get(edge.from_junction_id, None)
+            edge.to_junction = self.junctions.get(edge.to_junction_id, None)
         # make junction-related links
-        for junction in self.junctions:
+        for junction in self.junctions.values():
             if junction.type == "internal":
                 continue
             # link incoming lanes to junction
@@ -746,70 +725,70 @@ class Net:
             # link internal lanes to junction
             for i in junction.intLane_ids:
                 intLane = self._get_lane(i)
-                if i is not None:
+                if intLane is not None:
                     junction.intLanes.append(intLane)
             # link connections and requests to incoming lanes
             for lane in junction.incLanes:
                 lane.incoming_connections = self._get_connections_to_lane(lane.id)
                 lane.outgoing_connections = self._get_connections_from_lane(lane.id)
                 for cxn in lane.outgoing_connections:
-                    if cxn.via is not None:
+                    if cxn.via_id is not None:
                         reqs = []
                         try:
-                            req = junction.get_request_by_int_lane(cxn.via)
+                            req = junction.get_request_by_int_lane(cxn.via_id)
                         except IndexError:  # if no request found for via, look one level deeper
-                            cxns_internal = self._get_connections_from_lane(cxn.via)
+                            cxns_internal = self._get_connections_from_lane(cxn.via_id)
                             for cxni in cxns_internal:
-                                req = junction.get_request_by_int_lane(cxni.via)
+                                req = junction.get_request_by_int_lane(cxni.via_id)
                                 reqs.append(req)
                         else:
                             reqs.append(req)
                         for req in reqs:
                             lane.requests.append(req)
+        # link edges and lanes to connections
+        for connection in self.connections:
+            if connection.via_id is not None:
+                connection.via_lane = self._get_lane(connection.via_id)
+            connection.from_edge = self.edges.get(connection.from_edge_id, None)
+            if connection.from_edge is not None:
+                connection.from_lane = connection.from_edge.get_lane(connection.from_lane_index)
+            connection.to_edge = self.edges.get(connection.to_edge_id, None)
+            if connection.to_edge is not None:
+                connection.to_lane = connection.to_edge.get_lane(connection.to_lane_index)
 
     def _get_extents(self):
         lane_geoms = []
-        for edge in self.edges:
+        for edge in self.edges.values():
             for lane in edge.lanes:
                 lane_geoms.append(lane.shape)
         polygons = MultiPolygon(lane_geoms)
         return polygons.bounds
 
-    def _get_junction(self, junction_id):
-        for junction in self.junctions:
-            if junction.id == junction_id:
-                return junction
-
     def _get_connections_from_lane(self, lane_id):
         cxns = []
         for connection in self.connections:
-            if connection.from_edge + "_" + connection.from_lane == lane_id:
+            if connection.from_edge_id + "_" + str(connection.from_lane_index) == lane_id:
                 cxns.append(connection)
         return cxns
 
     def _get_connections_to_lane(self, lane_id):
         cxns = []
         for connection in self.connections:
-            if connection.to_edge + "_" + connection.to_lane == lane_id:
+            if connection.to_edge_id + "_" + str(connection.to_lane_index) == lane_id:
                 cxns.append(connection)
         return cxns
 
     def _get_connections_via_lane(self, via):
         cxns = []
         for connection in self.connections:
-            if connection.via == via:
+            if connection.via_id == via:
                 cxns.append(connection)
         return cxns
-
-    def _get_edge(self, edge_id):
-        for edge in self.edges:
-            if edge.id == edge_id:
-                return edge
 
     def _get_lane(self, lane_id):
         edge_id = "_".join(lane_id.split("_")[:-1])
         lane_num = int(lane_id.split("_")[-1])
-        edge = self._get_edge(edge_id)
+        edge = self.edges.get(edge_id, None)
         return edge.get_lane(lane_num) if edge is not None else None
 
     def generate_obj_text(self, style=None, stripe_width_scale=1):
@@ -828,30 +807,22 @@ class Net:
         if style is not None:
             set_style(style)
         set_stripe_width_scale(stripe_width_scale)
-        content = ""
-        vertex_count = 0
-        for edge in self.edges:
+        objects = []
+        for edge in self.edges.values():
             if edge.function == "internal":
                 continue
             for lane in edge.lanes:
                 if edge.function not in ["crossing", "walkingarea"]:
-                    lane_content, vertex_count = lane.generate_obj_text(vertex_count)
-                    content += lane_content
-                markings_content, vertex_count = lane.generate_markings_obj_text(vertex_count=vertex_count)
-                content += markings_content
-        for junction in self.junctions:
+                    objects.append(lane.get_as_3d_object())
+                objects += lane.get_markings_as_3d_objects()
+        for junction in self.junctions.values():
             if junction.shape is not None:
-                junction_content, vertex_count = junction.generate_obj_text(vertex_count)
-                content += junction_content
+                objects.append(junction.get_as_3d_object())
         for connection in self.connections:
-            if connection.via is not None:
-                via_lane = self._get_lane(connection.via)
-                from_lane = self._get_edge(connection.from_edge).get_lane(int(connection.from_lane))
-                to_lane = self._get_edge(connection.to_edge).get_lane(int(connection.to_lane))
-                if from_lane.lane_type() == "pedestrian" and to_lane.lane_type() == "pedestrian":
-                    lane_content, vertex_count = connection.generate_obj_text(vertex_count)
-                    content += lane_content
-        return content
+            if connection.via_id is not None:
+                if connection.from_lane.lane_type() == "pedestrian" and connection.to_lane.lane_type() == "pedestrian":
+                    objects.append(connection.get_as_3d_object())
+        return _Utils.generate_obj_text_from_objects(objects)
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
              plot_stop_lines=None, lane_kwargs=None, lane_marking_kwargs=None, junction_kwargs=None, **kwargs):
@@ -897,10 +868,10 @@ class Net:
         ymin, ymax = ax.get_ylim()
         bounds = [[xmin, ymax], [xmax, ymax], [xmax, ymin], [xmin, ymin]]
         window = Polygon(bounds)
-        for edge in self.edges:
+        for edge in self.edges.values():
             if edge.function != "internal" and (not clip_to_limits or edge.intersects(window)):
                 edge.plot(ax, {"zorder": -100, **lane_kwargs}, {"zorder": -90, **lane_marking_kwargs}, **kwargs)
-        for junction in self.junctions:
+        for junction in self.junctions.values():
             if not clip_to_limits or (junction.shape is not None and junction.shape.intersects(window)):
                 junction.plot(ax, **{"zorder": -110, **kwargs, **junction_kwargs})
 
