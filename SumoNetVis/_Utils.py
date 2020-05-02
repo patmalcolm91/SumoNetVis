@@ -201,7 +201,7 @@ class LineDataUnits(Line2D):
     """
     def __init__(self, *args, **kwargs):
         _lw_data = kwargs.pop("linewidth", 1)
-        _dashes_data = kwargs.pop("dashes", (1,))
+        _dashes_data = kwargs.pop("dashes", (1, 0))
         super().__init__(*args, **kwargs)
         self.set_linestyle("--")
         self._lw_data = _lw_data
