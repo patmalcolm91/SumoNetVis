@@ -42,6 +42,7 @@
 -->
 
 <additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+    <busStop id="busStop_-gneE15_2_0" lane="-gneE15_2" startPos="63.28" endPos="90"/>
     <poly id="bldg1" color="110,110,110" fill="1" layer="128.00" shape="-111.920000,49.160000 -95.600000,27.950000 -76.560000,20.870000 -76.020000,49.160000 -111.920000,49.160000"/>
     <poly id="district1" color="red" fill="0" layer="128.00" shape="-51.010000,-110.680000 98.790000,-109.800000 212.670000,-75.640000 210.910000,42.620000 12.940000,41.740000 13.820000,-19.580000 -54.510000,-19.580000 -51.010000,-110.680000"/>
     <poly id="fence" color="black" fill="0" layer="128.00" shape="-72.530000,19.230000 -62.640000,16.980000 -46.010000,17.430000 -46.460000,48.440000 -75.980000,49.150000"/>
