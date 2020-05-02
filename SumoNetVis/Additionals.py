@@ -118,12 +118,28 @@ class Additionals:
                 self.pois[poi.id] = poi
 
     def plot_polygons(self, ax=None, **kwargs):
+        """
+        Plot all polygons.
+
+        :param ax: matplotlib Axes object
+        :param kwargs: kwargs to pass to the plotting function
+        :return: None
+        :type ax: plt.Axes
+        """
         if ax is None:
             ax = plt.gca()
         for poly in self.polys.values():
             poly.plot(ax, **kwargs)
 
     def plot_pois(self, ax=None, **kwargs):
+        """
+        Plot all POIs.
+
+        :param ax: matplotlib Axes object
+        :param kwargs: kwargs to pass to the plotting function
+        :return: None
+        :type ax: plt.Axes
+        """
         if ax is None:
             ax = plt.gca()
         for poi in self.pois.values():
