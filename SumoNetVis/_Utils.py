@@ -4,6 +4,7 @@ Contains miscellaneous utility classes and functions for internal library use.
 
 import numpy as np
 from matplotlib.lines import Line2D
+import matplotlib.colors
 
 
 class Object3D:
@@ -234,3 +235,24 @@ class LineDataUnits(Line2D):
 
     _linewidth = property(_get_lw, _set_lw)
     _dashSeq = property(_get_dashes, _set_dashes)
+
+
+def convert_sumo_color(sumo_color):
+    """
+    Convert a Sumo-compatible color string to a matplotlib-compatible format.
+
+    :param sumo_color: the color as specified in the sumo file
+    :return: a matplotlib-compatible representation of the color
+    :type sumo_color: str
+    """
+    if matplotlib.colors.is_color_like(sumo_color):
+        return sumo_color
+    elif "," in sumo_color:
+        c = tuple([float(i) for i in sumo_color.split(",")])
+        if max(c) > 1:
+            c = tuple([ci/255 for ci in c])
+        if len(c) not in [3, 4] or max(c) > 1:
+            raise ValueError("Invalid color tuple '" + sumo_color + "'.")
+        return c
+    else:
+        raise ValueError("Invalid color '" + sumo_color + "'.")
