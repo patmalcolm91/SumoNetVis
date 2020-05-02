@@ -5,6 +5,7 @@ Main classes and functions for dealing with Sumo "additional" files.
 import warnings
 import xml.etree.ElementTree as ET
 from shapely.geometry import *
+from shapely import ops
 import matplotlib.patches
 import matplotlib.pyplot as plt
 from SumoNetVis import _Utils
@@ -56,21 +57,38 @@ class _Poly:
 
 
 class _POI:
-    def __init__(self, attrib):
+    def __init__(self, attrib, reference_net=None):
         """
         Initializes a Sumo additionals POI.
 
         :param attrib: a dict of all the POI's XML attributes
+        :param reference_net: reference network to use for POIs whose position is specified based on a lane
         :type attrib: dict
+        :type reference_net: SumoNetVis.Net
         """
         self.id = attrib["id"]
         self.color = _Utils.convert_sumo_color(attrib["color"])
+        self.reference_net = reference_net
         self.x, self.y = None, None
         if "x" in attrib and "y" in attrib:
             self.x = float(attrib["x"])
             self.y = float(attrib["y"])
-        elif "lane" in attrib and "lanePos" in attrib:
-            warnings.warn("POI locations defined relative to lanes not supported.")
+        elif "lane" in attrib and "pos" in attrib:
+            if self.reference_net is None:
+                warnings.warn("Reference Net required for POIs with locations defined relative to lane.")
+            else:
+                edge_id = "_".join(attrib["lane"].split("_")[:-1])
+                lane_num = int(attrib["lane"].split("_")[-1])
+                try:
+                    lane = reference_net.edges.get(edge_id, None).get_lane(lane_num)
+                except (AttributeError, IndexError) as err:
+                    raise IndexError("Lane " + attrib["lane"] + " does not exist in reference network.") from err
+                lane_pos = float(attrib["pos"])
+                lane_pos_lat = float(attrib.get("posLat", 0))
+                side = "right" if lane_pos_lat < 0 else "left"
+                idx = 0 if side == "right" else -1  # shapely parallel_offset flips direction if side is "right"
+                assert hasattr(ops, "substring"), "Shapely>=1.7.0 is required for POIs with lane-based locations."
+                self.x, self.y = ops.substring(lane.alignment, 0, lane_pos).parallel_offset(abs(lane_pos_lat), side=side).coords[idx]
         elif "lat" in attrib and "lon" in attrib:
             warnings.warn("POI locations defined as lat/lon not supported.")
         else:
@@ -100,12 +118,16 @@ class _POI:
 
 
 class Additionals:
-    def __init__(self, file):
+    def __init__(self, file, reference_net=None):
         """
         Reads objects from a Sumo additional XML file.
 
         :param file: path to Sumo additional file
+        :param reference_net: network to use for objects which reference network elements (optional)
+        :type file: str
+        :type reference_net: SumoNetVis.Net
         """
+        self.reference_net = reference_net
         self.polys = dict()
         self.pois = dict()
         root = ET.parse(file).getroot()
@@ -114,7 +136,7 @@ class Additionals:
                 poly = _Poly(obj.attrib)
                 self.polys[poly.id] = poly
             elif obj.tag == "poi":
-                poi = _POI(obj.attrib)
+                poi = _POI(obj.attrib, reference_net=reference_net)
                 self.pois[poi.id] = poi
 
     def plot_polygons(self, ax=None, **kwargs):
@@ -171,7 +193,10 @@ class Additionals:
 
 
 if __name__ == "__main__":
-    addls = Additionals("../Sample/test.add.xml")
+    import Net
+    net = Net.Net("../Sample/test.net.xml")
+    net.plot()
+    addls = Additionals("../Sample/test.add.xml", reference_net=net)
     addls.plot()
     plt.gca().set_aspect("equal")
     plt.show()
