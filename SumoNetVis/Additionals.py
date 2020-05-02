@@ -27,7 +27,7 @@ class _Poly:
         if self.geo:
             warnings.warn("Geographic coordinates not supported for polygons in additional files.")
         self.lineWidth = float(attrib.get("lineWidth", 1))
-        self.layer = attrib.get("layer", "0")
+        self.layer = float(attrib.get("layer", "0"))
         self.type = attrib.get("type", "")
         self.imgFile = attrib.get("imgFile", None)
         if self.imgFile is not None:
@@ -43,6 +43,7 @@ class _Poly:
         :return: None
         :type ax: plt.Axes
         """
+        kwargs = {"zorder": self.layer-110 if self.layer <= 0 else self.layer-90, **kwargs}
         if self.fill is True:
             if "lw" not in kwargs and "linewidth" not in kwargs:
                 kwargs["lw"] = 0
