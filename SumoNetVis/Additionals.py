@@ -145,10 +145,33 @@ class Additionals:
         for poi in self.pois.values():
             poi.plot(ax, **kwargs)
 
+    def plot(self, ax=None, polygon_kwargs=None, poi_kwargs=None, **kwargs):
+        """
+        Plot all supported objects contained within the Additionals object.
+        Kwargs are passed to the plotting functions, with object-specific kwargs overriding general ones.
+
+        :param ax: matplotlib Axes object
+        :param polygon_kwargs: kwargs to pass to the polygon plotting function
+        :param poi_kwargs: kwargs to pass to the POI plotting function
+        :return: None
+        :type ax: plt.Axes
+        :type polygon_kwargs: dict
+        :type poi_kwargs: dict
+        """
+        if ax is None:
+            ax = plt.gca()
+        if polygon_kwargs is None:
+            polygon_kwargs = dict()
+        if poi_kwargs is None:
+            poi_kwargs = dict()
+        for poly in self.polys.values():
+            poly.plot(ax, **{**kwargs, **polygon_kwargs})
+        for poi in self.pois.values():
+            poi.plot(ax, **{**kwargs, **poi_kwargs})
+
 
 if __name__ == "__main__":
     addls = Additionals("../Sample/test.add.xml")
-    addls.plot_polygons()
-    addls.plot_pois()
+    addls.plot()
     plt.gca().set_aspect("equal")
     plt.show()
