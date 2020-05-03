@@ -267,6 +267,33 @@ class _BusStop:
         for marking in self._get_markings():
             marking.plot(ax, **marking_kwargs)
 
+    def get_as_3d_objects(self, area_kwargs=None, markings_kwargs=None, **kwargs):
+        """
+        Generates a list of Object3D objects from the bus stop area and markings.
+
+        Object-specific kwargs override general kwargs. Options are: "z", "extrude_height", and "include_bottom_face".
+        Default for area_kwargs: 0.002, 0, False
+        Default for markings_kwargs: 0.003, 0, False
+
+        :param area_kwargs: kwargs for 3D area object generation.
+        :param markings_kwargs: kwargs for 3D lane markings object generation.
+        :type area_kwargs: dict
+        :type markings_kwargs: dict
+        """
+        if area_kwargs is None:
+            area_kwargs = dict()
+        if markings_kwargs is None:
+            markings_kwargs = dict()
+        area_kwargs = {"z": 0.002, "extrude_height": 0, "include_bottom_face": False, **kwargs, **area_kwargs}
+        markings_kwargs = {"z": 0.003, "extrude_height": 0, "include_bottom_face": False, **kwargs, **markings_kwargs}
+        objs = []
+        outline = self._get_shape()
+        if outline is not None:
+            objs.append(_Utils.Object3D.from_shape(outline, "busstop_area", "busstop_area", **area_kwargs))
+        for marking in self._get_markings():
+            objs.append(marking.get_as_3d_object(**markings_kwargs))
+        return objs
+
 
 class Additionals:
     def __init__(self, file, reference_net=None):
@@ -321,6 +348,25 @@ class Additionals:
             ax = plt.gca()
         for poi in self.pois.values():
             poi.plot(ax, **kwargs)
+
+    def generate_bus_stops_obj_text(self, area_kwargs=None, markings_kwargs=None, **kwargs):
+        """
+        Generates the contents for a Wavefront-OBJ file which represents the bus stops as a 3D model.
+
+        This text can be saved as text to a file with the *.obj extension and then imported into a 3D modelling program.
+        The axis configuration in the generated file is Y-Forward, Z-Up.
+
+        Object-specific kwargs override general kwargs. Options are: "z", "extrude_height", and "include_bottom_face".
+
+        :param area_kwargs: kwargs for 3D area object generation.
+        :param markings_kwargs: kwargs for 3D lane markings object generation.
+        :type area_kwargs: dict
+        :type markings_kwargs: dict
+        """
+        objs = []
+        for bus_stop in self.bus_stops.values():
+            objs += bus_stop.get_as_3d_objects(area_kwargs, markings_kwargs, **kwargs)
+        return _Utils.generate_obj_text_from_objects(objs)
 
     def plot_bus_stops(self, ax=None, area_kwargs=None, marking_kwargs=None, **kwargs):
         """
