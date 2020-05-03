@@ -9,7 +9,9 @@ import shapely.ops as ops
 import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
+from typing import Union
 from SumoNetVis import _Utils
+from SumoNetVis import Additionals
 
 DEFAULT_LANE_WIDTH = 3.2
 STRIPE_WIDTH_SCALE_FACTOR = 1  # factor by which to scale striping widths
@@ -665,13 +667,16 @@ class _Junction:
 
 
 class Net:
-    def __init__(self, file):
+    def __init__(self, file, additional_files=None):
         """
         Initializes a Net object from a Sumo network file
 
         :param file: path to Sumo network file
+        :param additional_files: optional path to additional file (or list of paths) to include with the network.
         :type file: str
+        :type additional_files: Union[str, list[str]]
         """
+        self.additionals = []
         self.edges = dict()
         self.junctions = dict()
         self.connections = []
@@ -702,6 +707,12 @@ class Net:
                 connection = _Connection(obj.attrib)
                 self.connections.append(connection)
         self._link_objects()
+        if additional_files is not None:
+            if type(additional_files) == str:
+                self.load_additional_file(additional_files)
+            else:
+                for addl_file in additional_files:
+                    self.load_additional_file(addl_file)
 
     def _link_objects(self):
         """
@@ -755,6 +766,10 @@ class Net:
             connection.to_edge = self.edges.get(connection.to_edge_id, None)
             if connection.to_edge is not None:
                 connection.to_lane = connection.to_edge.get_lane(connection.to_lane_index)
+
+    def load_additional_file(self, file):
+        addl = Additionals.Additionals(file, reference_net=self)
+        self.additionals.append(addl)
 
     def _get_extents(self):
         lane_geoms = []
@@ -822,10 +837,14 @@ class Net:
             if connection.via_id is not None:
                 if connection.from_lane.lane_type() == "pedestrian" and connection.to_lane.lane_type() == "pedestrian":
                     objects.append(connection.get_as_3d_object())
+        for additional in self.additionals:
+            for bus_stop in additional.bus_stops.values():
+                objects += bus_stop.get_as_3d_objects()
         return _Utils.generate_obj_text_from_objects(objects)
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
-             plot_stop_lines=None, lane_kwargs=None, lane_marking_kwargs=None, junction_kwargs=None, **kwargs):
+             plot_stop_lines=None, lane_kwargs=None, lane_marking_kwargs=None, junction_kwargs=None,
+             additionals_kwargs=None, **kwargs):
         """
         Plots the Net. Kwargs are passed to the plotting functions, with object-specific kwargs overriding general ones.
 
@@ -838,6 +857,7 @@ class Net:
         :param lane_kwargs: kwargs to pass to the lane plotting function (matplotlib.patches.Polygon())
         :param lane_marking_kwargs: kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
         :param junction_kwargs: kwargs to pass to the junction plotting function (matplotlib.patches.Polygon())
+        :param additionals_kwargs: kwargs to pass to the additionals plotting function (Additionals.plot())
         :return: None
         :type ax: plt.Axes
         :type clip_to_limits: bool
@@ -859,6 +879,8 @@ class Net:
             lane_kwargs = dict()
         if lane_marking_kwargs is None:
             lane_marking_kwargs = dict()
+        if additionals_kwargs is None:
+            additionals_kwargs = dict()
         if zoom_to_extents and not clip_to_limits:
             x_min, y_min, x_max, y_max = self._get_extents()
             ax.set_xlim(x_min, x_max)
@@ -874,6 +896,8 @@ class Net:
         for junction in self.junctions.values():
             if not clip_to_limits or (junction.shape is not None and junction.shape.intersects(window)):
                 junction.plot(ax, **{"zorder": -110, **kwargs, **junction_kwargs})
+        for additional in self.additionals:
+            additional.plot(ax, **{**kwargs, **additionals_kwargs})
 
 
 if __name__ == "__main__":

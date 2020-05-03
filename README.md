@@ -99,17 +99,25 @@ a = animation.FuncAnimation(fig, trajectories.plot_points, frames=trajectories.t
 ```
 
 ### Additional Files
-Sumo additional files can be loaded and plotted as follows:
+Currently, polygons, POIs, and bus stops are supported. Sumo additional files can be loaded and plotted in one of
+two ways:
+
+**Load directly with Network**
+```python
+net = SumoNetVis.Net("path/to/yourfile.net.xml", additional_files="path/to/additionals_file.add.xml")
+```
+
+**Load and handle additional files separately**
 ```python
 addls = SumoNetVis.Additionals("path/to/additionals_file.add.xml", reference_net=net)
 addls.plot()
 ```
-Currently, polygons, POIs, and bus stops are supported.
 The ```reference_net``` argument is optional, and only necessary for bus stops and for POIs whose position is defined
 relative to a lane in the network.
 
+#### Bus stop styles
 Several styles of bus stop are supported. The style can be changed using the function
-```SumoNetVis.set_bus_stop_style()``` (see documentation for more details.)
+```SumoNetVis.set_bus_stop_style()```. See documentation for further details
 
 ### OBJ Export
 
