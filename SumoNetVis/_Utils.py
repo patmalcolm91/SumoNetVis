@@ -2,12 +2,14 @@
 Contains miscellaneous utility classes and functions for internal library use.
 """
 
+import warnings
 import numpy as np
 from matplotlib.lines import Line2D
+import matplotlib.colors
 
 
 class Object3D:
-    def __init__(self, name, material, vertices, faces):
+    def __init__(self, name, material, vertices, faces, lines=None):
         """
         Create a 3D object.
 
@@ -15,18 +17,21 @@ class Object3D:
         :param material: name of the material to associate to the object
         :param vertices: list of vertex coordinates
         :param faces: list of faces, each a list of indices of the vertices making up the face
+        :param lines: list of lines, each a list of indices of the vertices making up the line
         :type name: str
         :type material: str
         :type vertices: list[list[float]]
         :type faces: list[list[int]]
+        :type lines: list[list[int]]
         """
         self.vertices = vertices
         self.faces = faces
+        self.lines = lines if lines is not None else []
         self.name = name
         self.material = material
 
     @classmethod
-    def from_shape(cls, shape, name, material, z=0, extrude_height=0, include_bottom_face=False):
+    def from_shape(cls, shape, name, material, z=0, extrude_height=0, include_bottom_face=False, include_top_face=True):
         """
         Generates an Object3D from a shapely shape, either as a flat plane or by extrusion along the z axis
 
@@ -36,20 +41,30 @@ class Object3D:
         :param z: the desired z coordinate for the base of the object. Defaults to zero.
         :param extrude_height: distance by which to extrude the face vertically.
         :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :param include_top_face: whether to include the top face of the geometry.
         :type name: str
         :type material: str
         :type z: float
         :type extrude_height: float
         :type include_bottom_face: bool
+        :type include_top_face: bool
         """
-        vertices, faces = [], []
+        vertices, faces, lines = [], [], []
         # get coordinate sequences from shape
         if shape.geometryType() == "MultiPolygon":
             outlines = [polygon.boundary.coords for polygon in shape]
         elif shape.geometryType() == "Polygon":
             outlines = [shape.boundary.coords]
+        elif shape.geometryType() == "MultiLineString":
+            outlines = [line.coords for line in shape]
+        elif shape.geometryType() == "LineString":
+            outlines = [shape.coords]
         else:
             raise NotImplementedError("Can't generate 3D object from " + shape.geometryType())
+        if shape.geometryType() in ["MultiLineString", "LineString"]:
+            if include_top_face or include_bottom_face:
+                warnings.warn("Ignoring 3D geometry top and bottom faces for geometry type "+shape.geometryType())
+                include_bottom_face = include_top_face = False
         # calculate vertices and faces
         for outline in outlines:
             # generate coordinates of top and bottom face
@@ -58,7 +73,10 @@ class Object3D:
             edge_len = len(top_vertices)
             # add top vertices and face
             vertices += top_vertices
-            faces += [[i+1 for i in range(v_offset, v_offset+edge_len)]]
+            if include_top_face:
+                faces += [[i+1 for i in range(v_offset, v_offset+edge_len)]]
+            elif extrude_height == 0 and not include_bottom_face:
+                lines = [[i+1 for i in range(v_offset, v_offset+edge_len)]]
             # perform extrusion
             if extrude_height != 0:
                 bottom_vertices = [[v[0], v[1], z] for v in outline]
@@ -68,7 +86,7 @@ class Object3D:
                 # add bottom face
                 if include_bottom_face:
                     faces += [[i+edge_len+1 for i in range(v_offset, v_offset+edge_len)]]
-        return cls(name, material, vertices, faces)
+        return cls(name, material, vertices, faces, lines)
 
 
 def generate_obj_text_from_objects(objects):
@@ -85,7 +103,10 @@ def generate_obj_text_from_objects(objects):
         content += "o " + object.name
         content += "\nusemtl " + object.material
         content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in object.vertices])
-        content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in object.faces])
+        if len(object.faces) > 0:
+            content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in object.faces])
+        if len(object.lines) > 0:
+            content += "\nl " + "\nl ".join([" ".join([str(v + vertex_count) for v in line]) for line in object.lines])
         content += "\n\n"
         vertex_count += len(object.vertices)
     return content
@@ -201,9 +222,10 @@ class LineDataUnits(Line2D):
     """
     def __init__(self, *args, **kwargs):
         _lw_data = kwargs.pop("linewidth", 1)
-        _dashes_data = kwargs.pop("dashes", (1,))
+        _dashes_data = kwargs.pop("dashes", (1, 0))
         super().__init__(*args, **kwargs)
-        self.set_linestyle("--")
+        if _dashes_data != (1, 0):
+            self.set_linestyle("--")
         self._lw_data = _lw_data
         self._dashes_data = _dashes_data
         self._dashOffset = 0
@@ -233,3 +255,24 @@ class LineDataUnits(Line2D):
 
     _linewidth = property(_get_lw, _set_lw)
     _dashSeq = property(_get_dashes, _set_dashes)
+
+
+def convert_sumo_color(sumo_color):
+    """
+    Convert a Sumo-compatible color string to a matplotlib-compatible format.
+
+    :param sumo_color: the color as specified in the sumo file
+    :return: a matplotlib-compatible representation of the color
+    :type sumo_color: str
+    """
+    if matplotlib.colors.is_color_like(sumo_color):
+        return sumo_color
+    elif "," in sumo_color:
+        c = tuple([float(i) for i in sumo_color.split(",")])
+        if max(c) > 1:
+            c = tuple([ci/255 for ci in c])
+        if len(c) not in [3, 4] or max(c) > 1:
+            raise ValueError("Invalid color tuple '" + sumo_color + "'.")
+        return c
+    else:
+        raise ValueError("Invalid color '" + sumo_color + "'.")

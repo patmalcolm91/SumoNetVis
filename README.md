@@ -105,14 +105,40 @@ a = animation.FuncAnimation(fig, trajectories.plot_points, frames=trajectories.t
                             interval=1000*trajectories.timestep, fargs=(ax, True), blit=True)
 ```
 
+### Additional Files
+Currently, polygons, POIs, and bus stops are supported. Sumo additional files can be loaded and plotted in one of
+two ways:
+
+**Load directly with Network**
+```python
+net = SumoNetVis.Net("path/to/yourfile.net.xml", additional_files="path/to/additionals_file.add.xml")
+```
+
+**Load and handle additional files separately**
+```python
+addls = SumoNetVis.Additionals("path/to/additionals_file.add.xml", reference_net=net)
+addls.plot()
+```
+The ```reference_net``` argument is optional, and only necessary for bus stops and for POIs whose position is defined
+relative to a lane in the network.
+
+#### Bus stop styles
+Several styles of bus stop are supported. The style can be changed using the function
+```SumoNetVis.set_bus_stop_style()```. See documentation for further details
+
 ### OBJ Export
 
 The Wavefront-OBJ format is a text-based file format. The ```Net.generate_obj_text()``` method generates the contents
 of this file for the given Sumo network. In order to save an OBJ file, do the following:
 
 ```python
+# Save a network as an OBJ file
 with open("model.obj", "w") as f:
     f.write(net.generate_obj_text())
+
+# Save bus stops and polygons from an additional file as an OBJ file
+with open("busstops.obj", "w") as f:
+    f.write(addls.generate_bus_stops_obj_text())
 ```
 
 The axis configuration in the generated file is Y-Forward, Z-Up. Check these settings if the orientation of the model
