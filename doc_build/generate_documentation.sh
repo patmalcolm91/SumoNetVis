@@ -2,8 +2,13 @@
 
 make html;
 
-mv doctrees/* ../docs/.doctrees;
-rmdir doctrees;
+rm -rf ../docs/*
 
-mv html/* ../docs;
-rmdir html;
+mv -f _build/doctrees/* ../docs/.doctrees/;
+rmdir _build/doctrees;
+
+mv -f _build/html/* ../docs/;
+rm _build/html/.buildinfo
+rmdir _build/html;
+
+rmdir _build

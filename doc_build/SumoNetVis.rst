@@ -17,3 +17,11 @@ SumoNetVis.Trajectory module
    :undoc-members:
    :show-inheritance:
 
+SumoNetVis.Additionals module
+-----------------------------
+
+.. automodule:: SumoNetVis.Additionals
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
