@@ -1,8 +1,13 @@
 # SumoNetVis
 A Python library for visualizing a Sumo network and trajectories with matplotlib or as an OBJ file.
 
+**Network and Trajectory Plotting**
 ![Example plot of an intersection with trajectory colored by speed](Example_Plot.png)
+
+**Highly Customizable**
 ![Example plot showing USA and EUR style lane markings](Line_Stripe_Styles_Animation.gif)
+
+**Trajectory Animation**
 ![Example animation](Example_Animation.gif)
 
 Basic trajectory plotting from FCD outputs is built in, but it is also possible to plot custom data and graphics on
