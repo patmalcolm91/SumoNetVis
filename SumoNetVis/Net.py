@@ -840,6 +840,8 @@ class Net:
         for additional in self.additionals:
             for bus_stop in additional.bus_stops.values():
                 objects += bus_stop.get_as_3d_objects()
+            for poly in additional.polys.values():
+                objects.append(poly.get_as_3d_object())
         return _Utils.generate_obj_text_from_objects(objects)
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,

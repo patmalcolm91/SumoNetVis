@@ -129,7 +129,7 @@ of this file for the given Sumo network. In order to save an OBJ file, do the fo
 with open("model.obj", "w") as f:
     f.write(net.generate_obj_text())
 
-# Save bus stops from an additional file as an OBJ file
+# Save bus stops and polygons from an additional file as an OBJ file
 with open("busstops.obj", "w") as f:
     f.write(addls.generate_bus_stops_obj_text())
 ```

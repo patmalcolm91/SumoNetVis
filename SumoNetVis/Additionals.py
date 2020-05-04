@@ -62,6 +62,21 @@ class _Poly:
             warnings.warn("Display of polygons in additional files as images not supported.")
         self.angle = float(attrib.get("angle", 0))
 
+    def get_as_3d_object(self, z=0, extrude_height=0, include_bottom_face=False):
+        """
+        Generates a list of Object3D objects from the bus stop area and markings.
+
+        :param z: desired z coordinate of base of object
+        :param extrude_height: amount by which to extrude the polygon along the z axis.
+        :param include_bottom_face: whether to include the bottom face when extruding.
+        :return: Object3D representing the polygon
+        :type z: float
+        :type extrude_height: float
+        :type include_bottom_face: bool
+        """
+        return _Utils.Object3D.from_shape(self.shape, self.id, self.type+"_poly", z=z, extrude_height=extrude_height,
+                                          include_bottom_face=include_bottom_face, include_top_face=self.fill)
+
     def plot(self, ax, **kwargs):
         """
         Plot the polygon.
@@ -366,6 +381,21 @@ class Additionals:
         objs = []
         for bus_stop in self.bus_stops.values():
             objs += bus_stop.get_as_3d_objects(area_kwargs, markings_kwargs, **kwargs)
+        return _Utils.generate_obj_text_from_objects(objs)
+
+    def generate_polygons_obj_text(self, **kwargs):
+        """
+        Generates the contents for a Wavefront-OBJ file which represents the polygons as a 3D model.
+
+        This text can be saved as text to a file with the *.obj extension and then imported into a 3D modelling program.
+        The axis configuration in the generated file is Y-Forward, Z-Up.
+
+        Possible kwargs are: "z", "extrude_height", and "include_bottom_face". Defaults are 0, 0, False.
+        """
+        objs = []
+        kwargs = {"z": 0, "extrude_height": 0, "include_bottom_face": False, **kwargs}
+        for poly in self.polys.values():
+            objs.append(poly.get_as_3d_object(**kwargs))
         return _Utils.generate_obj_text_from_objects(objs)
 
     def plot_bus_stops(self, ax=None, area_kwargs=None, marking_kwargs=None, **kwargs):
