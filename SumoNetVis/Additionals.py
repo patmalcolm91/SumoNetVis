@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.patches
 import matplotlib.pyplot as plt
 from SumoNetVis import _Utils
-from SumoNetVis import Net
+from SumoNetVis import Net as _Net
 
 
 BUS_STOP_STYLE_SUMO = "SUMO"
@@ -231,7 +231,7 @@ class _BusStop:
                     zigzag_coords.append(tuple(zig_coords[i]))
             zigzag_coords.append(curb_align.coords[-1])
             zigzag_line = LineString(zigzag_coords)
-            markings.append(Net._LaneMarking(zigzag_line, lw, "w", dashes, purpose="busstop"))
+            markings.append(_Net._LaneMarking(zigzag_line, lw, "w", dashes, purpose="busstop"))
         elif BUS_STOP_STYLE == BUS_STOP_STYLE_UK:
             # generate UK-style inset dashed line box markings
             inset = 0.2
@@ -243,15 +243,15 @@ class _BusStop:
             end_edge = LineString([curb_align.coords[-1], inner_align.coords[0]])
             curb_align = ops.substring(curb_align, 2*light_lw, curb_align.length-2*light_lw).\
                 parallel_offset(heavy_lw/2, "right")
-            markings.append(Net._LaneMarking(curb_align, heavy_lw, "y", curb_dashes, purpose="busstop"))
-            markings.append(Net._LaneMarking(start_edge, light_lw, "y", end_dashes, purpose="busstop"))
-            markings.append(Net._LaneMarking(end_edge, light_lw, "y", end_dashes, purpose="busstop"))
-            markings.append(Net._LaneMarking(inner_align, light_lw, "y", end_dashes, purpose="busstop"))
+            markings.append(_Net._LaneMarking(curb_align, heavy_lw, "y", curb_dashes, purpose="busstop"))
+            markings.append(_Net._LaneMarking(start_edge, light_lw, "y", end_dashes, purpose="busstop"))
+            markings.append(_Net._LaneMarking(end_edge, light_lw, "y", end_dashes, purpose="busstop"))
+            markings.append(_Net._LaneMarking(inner_align, light_lw, "y", end_dashes, purpose="busstop"))
         elif BUS_STOP_STYLE == BUS_STOP_STYLE_USA:
             # return simple USA-style solid outline markings
             lw, dashes = 0.1, (100, 0)
             outline = lane_cl_seg.buffer(self.lane.width/2, cap_style=CAP_STYLE.flat).boundary
-            markings.append(Net._LaneMarking(outline, lw, "w", dashes, purpose="busstop"))
+            markings.append(_Net._LaneMarking(outline, lw, "w", dashes, purpose="busstop"))
         return markings
 
     def plot(self, ax, area_kwargs=None, marking_kwargs=None, **kwargs):
@@ -445,7 +445,7 @@ class Additionals:
 
 
 if __name__ == "__main__":
-    net = Net.Net("../Sample/test.net.xml")
+    net = _Net.Net("../Sample/test.net.xml")
     net.plot()
     set_bus_stop_style(BUS_STOP_STYLE_GER)
     addls = Additionals("../Sample/test.add.xml", reference_net=net)

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from typing import Union
 from SumoNetVis import _Utils
-from SumoNetVis import Additionals
+from SumoNetVis import Additionals as _Addls
 
 DEFAULT_LANE_WIDTH = 3.2
 STRIPE_WIDTH_SCALE_FACTOR = 1  # factor by which to scale striping widths
@@ -768,7 +768,7 @@ class Net:
                 connection.to_lane = connection.to_edge.get_lane(connection.to_lane_index)
 
     def load_additional_file(self, file):
-        addl = Additionals.Additionals(file, reference_net=self)
+        addl = _Addls.Additionals(file, reference_net=self)
         self.additionals.append(addl)
 
     def _get_extents(self):
