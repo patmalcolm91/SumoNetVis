@@ -177,8 +177,9 @@ class _LaneMarking:
         :return: None
         :type ax: plt.Axes
         """
+        color = kwargs.pop("color") if "color" in kwargs else self.color
         x, y = zip(*self.alignment.coords)
-        line = _Utils.LineDataUnits(x, y, linewidth=self.linewidth, color=self.color, dashes=self.dashes, **kwargs)
+        line = _Utils.LineDataUnits(x, y, linewidth=self.linewidth, color=color, dashes=self.dashes, **kwargs)
         ax.add_line(line)
 
     def get_as_shape(self, cap_style=CAP_STYLE.flat):
@@ -294,7 +295,9 @@ class _Lane:
         """
         if "lw" not in kwargs and "linewidth" not in kwargs:
             kwargs["lw"] = 0
-        poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=self.lane_color(), **kwargs)
+        if "color" not in kwargs:
+            kwargs["color"] = self.lane_color()
+        poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
         ax.add_patch(poly)
 
     def inverse_lane_index(self):
@@ -662,7 +665,9 @@ class _Junction:
         if self.shape is not None:
             if "lw" not in kwargs and "linewidth" not in kwargs:
                 kwargs["lw"] = 0
-            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=COLOR_SCHEME["junction"], **kwargs)
+            if "color" not in kwargs:
+                kwargs["color"] = COLOR_SCHEME["junction"]
+            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
             ax.add_patch(poly)
 
 

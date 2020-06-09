@@ -86,15 +86,15 @@ class _Poly:
         :return: None
         :type ax: plt.Axes
         """
-        kwargs = {"zorder": self.layer-110 if self.layer <= 0 else self.layer-90, **kwargs}
+        kwargs = {"zorder": self.layer-110 if self.layer <= 0 else self.layer-90, "color": self.color, **kwargs}
         if self.fill is True:
             if "lw" not in kwargs and "linewidth" not in kwargs:
                 kwargs["lw"] = 0
-            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, color=self.color, **kwargs)
+            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
             ax.add_patch(poly)
         else:
             x, y = zip(*self.shape.coords)
-            line = _Utils.LineDataUnits(x, y, linewidth=self.lineWidth, color=self.color, **kwargs)
+            line = _Utils.LineDataUnits(x, y, linewidth=self.lineWidth, **kwargs)
             ax.add_line(line)
 
 
@@ -153,9 +153,10 @@ class _POI:
         :return: None
         :type ax: plt.Axes
         """
-        kwargs = {"radius": 1, "zorder": self.layer-110 if self.layer <= 0 else self.layer-90, **kwargs}
+        kwargs = {"color": self.color, "radius": 1,
+                  "zorder": self.layer-110 if self.layer <= 0 else self.layer-90, **kwargs}
         if self.x is not None and self.y is not None:
-            circle = matplotlib.patches.Circle((self.x, self.y), color=self.color, **kwargs)
+            circle = matplotlib.patches.Circle((self.x, self.y), **kwargs)
             ax.add_patch(circle)
 
 
@@ -277,7 +278,8 @@ class _BusStop:
         marking_kwargs = {"zorder": -94, **kwargs, **marking_kwargs}
         if outline is not None:
             area_color = BUS_STOP_AREA_COLOR.get(BUS_STOP_STYLE, "#00000000")
-            poly = matplotlib.patches.Polygon(outline.boundary.coords, True, color=area_color, **area_kwargs)
+            area_kwargs = {"color": area_color, **area_kwargs}
+            poly = matplotlib.patches.Polygon(outline.boundary.coords, True, **area_kwargs)
             ax.add_patch(poly)
         for marking in self._get_markings():
             marking.plot(ax, **marking_kwargs)
