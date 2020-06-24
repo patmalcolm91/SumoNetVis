@@ -371,7 +371,12 @@ class _Lane:
         objects = []
         for marking in self._guess_lane_markings():
             z = z_lane+0.002 if marking.purpose == "crossing" else z_lane+0.001
-            objects.append(marking.get_as_3d_object(z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face))
+            try:
+                obj = marking.get_as_3d_object(z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
+            except NotImplementedError:
+                warnings.warn("Could not generate geometry for " + marking.purpose + " marking of lane " + self.id)
+            else:
+                objects.append(obj)
         return objects
 
     def get_as_3d_object(self, z=0, include_bottom_face=False):
@@ -527,8 +532,14 @@ class _Connection:
         from_lane_right_edge = [list(c) for c in self.from_lane.alignment.parallel_offset(self.from_lane.width/2, side="right").coords]
         to_lane_left_edge = [list(c) for c in self.to_lane.alignment.parallel_offset(self.to_lane.width/2, side="left").coords]
         to_lane_right_edge = [list(c) for c in self.to_lane.alignment.parallel_offset(self.to_lane.width/2, side="right").coords]
-        left_edge = [list(c) for c in self.via_lane.alignment.parallel_offset(self.from_lane.width/2, side="left").coords]
-        right_edge = [list(c) for c in self.via_lane.alignment.parallel_offset(self.from_lane.width/2, side="right").coords]
+        try:
+            left_edge = [list(c) for c in self.via_lane.alignment.parallel_offset(self.from_lane.width/2, side="left").coords]
+        except (ValueError, NotImplementedError):
+            left_edge = []  # if offset fails, don't use any intermediate coordinates
+        try:
+            right_edge = [list(c) for c in self.via_lane.alignment.parallel_offset(self.from_lane.width/2, side="right").coords]
+        except (ValueError, NotImplementedError):
+            right_edge = []  # if offset fails, don't use any intermediate coordinates
         right_edge.reverse()
         # Generate coordinates
         left_coords = [from_lane_left_edge[-1]] + left_edge[1:-1] + [to_lane_left_edge[0]]
