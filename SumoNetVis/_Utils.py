@@ -82,10 +82,10 @@ class Object3D:
                 bottom_vertices = [[v[0], v[1], z] for v in outline]
                 vertices += bottom_vertices
                 # add side faces
-                faces += [[i+1, i+2, i+edge_len+2, i+edge_len+1] for i in range(v_offset, v_offset+edge_len-1)]
+                faces += [[i+edge_len+1, i+edge_len+2, i+2, i+1] for i in range(v_offset, v_offset+edge_len-1)]
                 # add bottom face
-                if include_bottom_face:
-                    faces += [[i+edge_len+1 for i in range(v_offset, v_offset+edge_len)]]
+                if include_bottom_face or True:
+                    faces += [[i+edge_len+1 for i in reversed(range(v_offset, v_offset+edge_len))]]
         return cls(name, material, vertices, faces, lines)
 
 
