@@ -84,7 +84,7 @@ class Object3D:
                 # add side faces
                 faces += [[i+edge_len+1, i+edge_len+2, i+2, i+1] for i in range(v_offset, v_offset+edge_len-1)]
                 # add bottom face
-                if include_bottom_face or True:
+                if include_bottom_face:
                     faces += [[i+edge_len+1 for i in reversed(range(v_offset, v_offset+edge_len))]]
         return cls(name, material, vertices, faces, lines)
 
