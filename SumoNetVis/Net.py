@@ -5,6 +5,7 @@ Main classes and functions for dealing with a Sumo network.
 import warnings
 import xml.etree.ElementTree as ET
 from shapely.geometry import *
+from shapely.geometry.polygon import orient
 import shapely.ops as ops
 import matplotlib.patches
 import matplotlib.pyplot as plt
@@ -212,7 +213,16 @@ class _LaneMarking:
         :type extrude_height: float
         :type include_bottom_face: bool
         """
-        return _Utils.Object3D.from_shape(self.get_as_shape(), self.purpose+"_marking", self.color+"_marking", z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
+        shape = self.get_as_shape()
+        if shape.geometryType() == "Polygon":
+            oriented_shape = MultiPolygon([orient(shape)])
+        elif shape.geometryType() in ["MultiPolygon", "GeometryCollection"]:
+            oriented_geoms = []
+            for geom in shape:
+                if geom.geometryType() == "Polygon":
+                    oriented_geoms.append(orient(geom))
+            oriented_shape = MultiPolygon(oriented_geoms)
+        return _Utils.Object3D.from_shape(oriented_shape, self.purpose+"_marking", self.color+"_marking", z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
 
 
 class _Lane:
@@ -389,8 +399,10 @@ class _Lane:
         :type z: float
         :type include_bottom_face: bool
         """
+        if self.shape.is_empty:
+            return None
         h = 0.15 if self.lane_type() == "pedestrian" else 0
-        return _Utils.Object3D.from_shape(self.shape, self.id, self.lane_type()+"_lane", z=0, extrude_height=h)
+        return _Utils.Object3D.from_shape(orient(self.shape), self.id, self.lane_type()+"_lane", z=0, extrude_height=h)
 
     def _guess_lane_markings(self):
         """
@@ -558,10 +570,12 @@ class _Connection:
         :type z: float
         :type include_bottom_face: bool
         """
-        shape = self._generate_shape()
+        shape = self.shape if self.shape is not None else self._generate_shape()
+        if shape.is_empty:
+            return None
         h = 0.15 if self.from_lane.lane_type() == "pedestrian" and self.to_lane.lane_type() == "pedestrian" else 0
         material = "pedestrian" if self.from_lane.lane_type() == "pedestrian" and self.to_lane.lane_type() == "pedestrian" else "connection"
-        return _Utils.Object3D.from_shape(shape, "cxn_via_" + self.via_id, material, z=z, extrude_height=h, include_bottom_face=include_bottom_face)
+        return _Utils.Object3D.from_shape(orient(shape), "cxn_via_" + self.via_id, material, z=z, extrude_height=h, include_bottom_face=include_bottom_face)
 
     def plot_alignment(self, ax):
         """
@@ -663,7 +677,9 @@ class _Junction:
         :type extrude_height: float
         :type include_bottom_face: bool
         """
-        return _Utils.Object3D.from_shape(self.shape, self.id, "junction", z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
+        if self.shape.is_empty:
+            return None
+        return _Utils.Object3D.from_shape(orient(self.shape), self.id, "junction", z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
 
     def plot(self, ax, **kwargs):
         """
@@ -858,6 +874,8 @@ class Net:
                 objects += bus_stop.get_as_3d_objects()
             for poly in additional.polys.values():
                 objects.append(poly.get_as_3d_object())
+        while None in objects:
+            objects.remove(None)
         return _Utils.generate_obj_text_from_objects(objects)
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
