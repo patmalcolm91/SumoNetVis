@@ -402,7 +402,7 @@ class _Lane:
         if self.shape.is_empty:
             return None
         h = 0.15 if self.lane_type() == "pedestrian" else 0
-        return _Utils.Object3D.from_shape(orient(self.shape), self.id, self.lane_type()+"_lane", z=0, extrude_height=h)
+        return _Utils.Object3D.from_shape(orient(self.shape), self.id, self.lane_type()+"_lane", z=z, extrude_height=h, include_bottom_face=include_bottom_face)
 
     def _guess_lane_markings(self):
         """
