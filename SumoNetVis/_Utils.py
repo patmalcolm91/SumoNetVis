@@ -6,7 +6,19 @@ import warnings
 import numpy as np
 from matplotlib.lines import Line2D
 import matplotlib.colors
-from shapely.ops import triangulate, orient
+from shapely.geometry import Polygon as shapelyPolygon
+try:
+    from shapely.ops import polylabel
+except ImportError:
+    _POLYLABEL_IMPORTED = False
+else:
+    _POLYLABEL_IMPORTED = True
+try:
+    import triangle
+except ImportError:
+    _TRIANGLE_IMPORTED = False
+else:
+    _TRIANGLE_IMPORTED = True
 
 
 class Object3D:
@@ -90,7 +102,7 @@ class Object3D:
         return cls(name, material, vertices, faces, lines)
 
     @classmethod
-    def from_shape_triangulated(cls, shape, name, material, z=0, snap_tolerance=0.001):
+    def from_shape_triangulated(cls, shape, name, material, z=0):
         """
         TODO: WRITE DOCUMENTATION
 
@@ -98,25 +110,54 @@ class Object3D:
         :param name:
         :param material:
         :param z:
-        :param snap_tolerance:
         :return:
         """
-        tri_mesh = triangulate(shape, snap_tolerance, edges=False)
-        vertices = []
-        faces = []
-        # collect all unique vertices in a list, and calculate the corresponding face definitions
-        for triangle in tri_mesh:
-            tvi = []  # hold the indices of the vertices of this triangle
-            for vertex in orient(triangle).boundary.coords[:-1]:
-                coord = list(vertex) + [z]
-                try:
-                    i = vertices.index(coord) + 1
-                except ValueError:
-                    vertices.append(coord)
-                    i = len(vertices)
-                tvi.append(i)
-            faces.append(tvi)
+        vertices, faces = triangulate_polygon_constrained(shape)
+        vertices = [[v[0], v[1], z] for v in vertices]
         return cls(name, material, vertices, faces)
+
+
+def triangulate_polygon_constrained(shape):
+    if not _TRIANGLE_IMPORTED:
+        raise EnvironmentError("Library 'triangle' required for triangulation.")
+    if not _POLYLABEL_IMPORTED:
+        raise EnvironmentError("Constrained polygon triangulation requires shapely>=1.7.0")
+    # Polygon case
+    if shape.geometryType() == "Polygon":
+        tri = {"vertices": [], "segments": [], "holes": []}
+        # add exterior edge
+        ext_pt_cnt = len(shape.exterior.coords) - 1
+        tri["vertices"] += shape.exterior.coords[:-1]
+        tri["segments"] += [[i, i+1] for i in range(ext_pt_cnt-1)] + [[ext_pt_cnt-1, 0]]
+        # add interior edges and holes
+        offset = ext_pt_cnt
+        for hole in shape.interiors:
+            hole_pt_cnt = len(hole.coords) - 1
+            tri["vertices"] += list(hole.coords[:-1])
+            tri["segments"] += [[i, i+1] for i in range(offset, offset+hole_pt_cnt-1)] + [[offset+hole_pt_cnt-1, offset]]
+            rp = shapelyPolygon(hole.coords).representative_point()
+            tri["holes"].append(list(*rp.coords))
+            offset += hole_pt_cnt
+        if len(tri["holes"]) == 0:
+            tri.pop("holes")
+        # perform triangulation
+        t = triangle.triangulate(tri, "p")
+        vertices = t["vertices"]
+        faces = [[i+1 for i in j] for j in t["triangles"]]  # switch from 0- to 1-indexing
+        return vertices, faces
+    # MultiPolygon/GeometryCollection case (recursive)
+    elif shape.geometryType() in ["MultiPolygon", "GeometryCollection"]:
+        vertices, faces = [], []
+        for part in shape:
+            if part.geometryType() == "Polygon":
+                v, f = triangulate_polygon_constrained(part)
+                vertices += v
+                offset = len(faces)
+                faces += [[i+offset for i in j] for j in f]
+        return vertices, faces
+    # Unsupported geometry case
+    else:
+        raise NotImplementedError("Can't do constrained triangulation on geometry type " + shape.geometryType())
 
 
 def generate_obj_text_from_objects(objects):
