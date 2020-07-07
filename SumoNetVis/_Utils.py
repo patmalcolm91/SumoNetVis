@@ -6,6 +6,7 @@ import warnings
 import numpy as np
 from matplotlib.lines import Line2D
 import matplotlib.colors
+from shapely.ops import triangulate, orient
 
 
 class Object3D:
@@ -87,6 +88,35 @@ class Object3D:
                 if include_bottom_face:
                     faces += [[i+edge_len+1 for i in reversed(range(v_offset, v_offset+edge_len))]]
         return cls(name, material, vertices, faces, lines)
+
+    @classmethod
+    def from_shape_triangulated(cls, shape, name, material, z=0, snap_tolerance=0.001):
+        """
+        TODO: WRITE DOCUMENTATION
+
+        :param shape:
+        :param name:
+        :param material:
+        :param z:
+        :param snap_tolerance:
+        :return:
+        """
+        tri_mesh = triangulate(shape, snap_tolerance, edges=False)
+        vertices = []
+        faces = []
+        # collect all unique vertices in a list, and calculate the corresponding face definitions
+        for triangle in tri_mesh:
+            tvi = []  # hold the indices of the vertices of this triangle
+            for vertex in orient(triangle).boundary.coords[:-1]:
+                coord = list(vertex) + [z]
+                try:
+                    i = vertices.index(coord) + 1
+                except ValueError:
+                    vertices.append(coord)
+                    i = len(vertices)
+                tvi.append(i)
+            faces.append(tvi)
+        return cls(name, material, vertices, faces)
 
 
 def generate_obj_text_from_objects(objects):

@@ -855,13 +855,14 @@ class Net:
         mask = ops.unary_union(polys)
         return mask
 
-    def generate_obj_text(self, style=None, stripe_width_scale=1):
+    def generate_obj_text(self, style=None, stripe_width_scale=1, terrain=False, terrain_distance=300, terrain_z=0):
         """
         Generates the contents for a Wavefront-OBJ file which represents the network as a 3D model.
 
         This text can be saved as text to a file with the *.obj extension and then imported into a 3D modelling program.
         The axis configuration in the generated file is Y-Forward, Z-Up.
 
+        TODO: UPDATE DOCUMENTATION
         :param style: lane marking style to use for rendering ("USA" or "EUR"). Defaults to last used or "EUR".
         :param stripe_width_scale: scale factor for lane striping widths. Defaults to 1.
         :return: None
@@ -893,6 +894,11 @@ class Net:
                 objects.append(poly.get_as_3d_object())
         while None in objects:
             objects.remove(None)
+        if terrain:
+            net_mask = self._get_mask()
+            net_buffer = net_mask.buffer(terrain_distance, cap_style=2, join_style=2)
+            terrain_shape = net_buffer.difference(net_mask)
+            objects.append(_Utils.Object3D.from_shape_triangulated(terrain_shape, "terrain", "terrain", terrain_z))
         return _Utils.generate_obj_text_from_objects(objects)
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
