@@ -838,6 +838,23 @@ class Net:
         edge = self.edges.get(edge_id, None)
         return edge.get_lane(lane_num) if edge is not None else None
 
+    def _get_mask(self):
+        """
+        Returns a shape representing the area(s) covered by network lane and junction shapes.
+
+        :return: result of shapely.ops.unary_union(polys), where polys contains all junction and lane shapes.
+        """
+        polys = []
+        for junction in self.junctions.values():
+            if junction.shape is not None:
+                polys.append(junction.shape)
+        for edge in self.edges.values():
+            for lane in edge.lanes:
+                if lane.shape is not None:
+                    polys.append(lane.shape)
+        mask = ops.unary_union(polys)
+        return mask
+
     def generate_obj_text(self, style=None, stripe_width_scale=1):
         """
         Generates the contents for a Wavefront-OBJ file which represents the network as a 3D model.
