@@ -32,6 +32,8 @@ EUR_STYLE = "EUR"
 LANE_MARKINGS_STYLE = EUR_STYLE  # desired lane marking style
 PLOT_STOP_LINES = True  # whether to plot stop lines
 
+OBJ_TERRAIN_CLEANUP_TOLERANCE = 0.01  # clean terrain boundaries by dilating then eroding the net bounds by this amount
+
 
 def set_style(style=None, plot_stop_lines=None):
     """
@@ -901,6 +903,8 @@ class Net:
             objects.remove(None)
         if terrain_distance > 0:
             net_mask = self._get_mask()
+            if OBJ_TERRAIN_CLEANUP_TOLERANCE > 0:
+                net_mask = net_mask.buffer(OBJ_TERRAIN_CLEANUP_TOLERANCE).buffer(-OBJ_TERRAIN_CLEANUP_TOLERANCE)
             net_buffer = net_mask.buffer(terrain_distance, cap_style=2, join_style=2)
             terrain_shape = net_buffer.difference(net_mask)
             additional_opts = "q" if terrain_hi_q else ""
