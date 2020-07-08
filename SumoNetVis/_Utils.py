@@ -102,22 +102,35 @@ class Object3D:
         return cls(name, material, vertices, faces, lines)
 
     @classmethod
-    def from_shape_triangulated(cls, shape, name, material, z=0):
+    def from_shape_triangulated(cls, shape, name, material, z=0, **kwargs):
         """
-        TODO: WRITE DOCUMENTATION
+        Generate a planar triangulated object from a shapely shape. Supports multi-geometries and polygons with holes.
 
-        :param shape:
-        :param name:
-        :param material:
-        :param z:
-        :return:
+        :param shape: shapely shape from which to generate Object3D
+        :param name: name of the object
+        :param material: name of the material to associate to the object.
+        :param z: the z coordinate for the object
+        :param kwargs: kwargs to pass to triangulation function.
+        :type name: str
+        :type material: str
+        :type z: float
         """
-        vertices, faces = triangulate_polygon_constrained(shape)
+        vertices, faces = triangulate_polygon_constrained(shape, **kwargs)
         vertices = [[v[0], v[1], z] for v in vertices]
         return cls(name, material, vertices, faces)
 
 
-def triangulate_polygon_constrained(shape):
+def triangulate_polygon_constrained(shape, additional_opts=""):
+    """
+    Perform constrained polygon triangulation. Essentially a compatibility layer between shapely and triangle.
+
+    For more information about the triangulation, see documentation for triangle: https://rufat.be/triangle/API.html
+
+    :param shape: shapely shape to triangulate
+    :param additional_opts: additional options to  pass to triangle.triangulate(). "p" option is always used.
+    :type additional_opts: str
+    :return: vertices, faces; where vertices is a list of coordinates, and faces a list of 1-indexed face definitions.
+    """
     if not _TRIANGLE_IMPORTED:
         raise EnvironmentError("Library 'triangle' required for triangulation.")
     if not _POLYLABEL_IMPORTED:
@@ -141,7 +154,7 @@ def triangulate_polygon_constrained(shape):
         if len(tri["holes"]) == 0:
             tri.pop("holes")
         # perform triangulation
-        t = triangle.triangulate(tri, "p")
+        t = triangle.triangulate(tri, "p"+additional_opts)
         vertices = t["vertices"]
         faces = [[i+1 for i in j] for j in t["triangles"]]  # switch from 0- to 1-indexing
         return vertices, faces
@@ -150,7 +163,7 @@ def triangulate_polygon_constrained(shape):
         vertices, faces = [], []
         for part in shape:
             if part.geometryType() == "Polygon":
-                v, f = triangulate_polygon_constrained(part)
+                v, f = triangulate_polygon_constrained(part, additional_opts)
                 offset = len(vertices)
                 vertices += [list(i) for i in v]
                 faces += [[i+offset for i in j] for j in f]

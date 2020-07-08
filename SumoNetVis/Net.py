@@ -855,19 +855,24 @@ class Net:
         mask = ops.unary_union(polys)
         return mask
 
-    def generate_obj_text(self, style=None, stripe_width_scale=1, terrain=False, terrain_distance=300, terrain_z=0):
+    def generate_obj_text(self, style=None, stripe_width_scale=1, terrain_distance=0, terrain_z=0, terrain_hi_q=False):
         """
         Generates the contents for a Wavefront-OBJ file which represents the network as a 3D model.
 
         This text can be saved as text to a file with the *.obj extension and then imported into a 3D modelling program.
         The axis configuration in the generated file is Y-Forward, Z-Up.
 
-        TODO: UPDATE DOCUMENTATION
         :param style: lane marking style to use for rendering ("USA" or "EUR"). Defaults to last used or "EUR".
         :param stripe_width_scale: scale factor for lane striping widths. Defaults to 1.
+        :param terrain_distance: if > 0: distance from network to which to generate terrain plane.
+        :param terrain_z: z value for terrain plane
+        :param terrain_hi_q: if True, generates "high-quality" mesh for terrain (no interior angles > 20°). WARNING: this can be very computationally intensive for large or complex networks.
         :return: None
         :type style: str
         :type stripe_width_scale: float
+        :type terrain_distance: float
+        :type terrain_z: float
+        :type terrain_hi_q: bool
         """
         if style is not None:
             set_style(style)
@@ -894,11 +899,13 @@ class Net:
                 objects.append(poly.get_as_3d_object())
         while None in objects:
             objects.remove(None)
-        if terrain:
+        if terrain_distance > 0:
             net_mask = self._get_mask()
             net_buffer = net_mask.buffer(terrain_distance, cap_style=2, join_style=2)
             terrain_shape = net_buffer.difference(net_mask)
-            objects.append(_Utils.Object3D.from_shape_triangulated(terrain_shape, "terrain", "terrain", terrain_z))
+            additional_opts = "q" if terrain_hi_q else ""
+            objects.append(_Utils.Object3D.from_shape_triangulated(terrain_shape, "terrain", "terrain", terrain_z,
+                                                                   additional_opts=additional_opts))
         return _Utils.generate_obj_text_from_objects(objects)
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
