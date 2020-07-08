@@ -6,6 +6,19 @@ import warnings
 import numpy as np
 from matplotlib.lines import Line2D
 import matplotlib.colors
+from shapely.geometry import Polygon as shapelyPolygon
+try:
+    from shapely.ops import polylabel
+except ImportError:
+    _POLYLABEL_IMPORTED = False
+else:
+    _POLYLABEL_IMPORTED = True
+try:
+    import triangle
+except ImportError:
+    _TRIANGLE_IMPORTED = False
+else:
+    _TRIANGLE_IMPORTED = True
 
 
 class Object3D:
@@ -87,6 +100,77 @@ class Object3D:
                 if include_bottom_face:
                     faces += [[i+edge_len+1 for i in reversed(range(v_offset, v_offset+edge_len))]]
         return cls(name, material, vertices, faces, lines)
+
+    @classmethod
+    def from_shape_triangulated(cls, shape, name, material, z=0, **kwargs):
+        """
+        Generate a planar triangulated object from a shapely shape. Supports multi-geometries and polygons with holes.
+
+        :param shape: shapely shape from which to generate Object3D
+        :param name: name of the object
+        :param material: name of the material to associate to the object.
+        :param z: the z coordinate for the object
+        :param kwargs: kwargs to pass to triangulation function.
+        :type name: str
+        :type material: str
+        :type z: float
+        """
+        vertices, faces = triangulate_polygon_constrained(shape, **kwargs)
+        vertices = [[v[0], v[1], z] for v in vertices]
+        return cls(name, material, vertices, faces)
+
+
+def triangulate_polygon_constrained(shape, additional_opts=""):
+    """
+    Perform constrained polygon triangulation. Essentially a compatibility layer between shapely and triangle.
+
+    For more information about the triangulation, see documentation for triangle: https://rufat.be/triangle/API.html
+
+    :param shape: shapely shape to triangulate
+    :param additional_opts: additional options to  pass to triangle.triangulate(). "p" option is always used.
+    :type additional_opts: str
+    :return: vertices, faces; where vertices is a list of coordinates, and faces a list of 1-indexed face definitions.
+    """
+    if not _TRIANGLE_IMPORTED:
+        raise EnvironmentError("Library 'triangle' required for triangulation.")
+    if not _POLYLABEL_IMPORTED:
+        raise EnvironmentError("Constrained polygon triangulation requires shapely>=1.7.0")
+    # Polygon case
+    if shape.geometryType() == "Polygon":
+        tri = {"vertices": [], "segments": [], "holes": []}
+        # add exterior edge
+        ext_pt_cnt = len(shape.exterior.coords) - 1
+        tri["vertices"] += shape.exterior.coords[:-1]
+        tri["segments"] += [[i, i+1] for i in range(ext_pt_cnt-1)] + [[ext_pt_cnt-1, 0]]
+        # add interior edges and holes
+        offset = ext_pt_cnt
+        for hole in shape.interiors:
+            hole_pt_cnt = len(hole.coords) - 1
+            tri["vertices"] += list(hole.coords[:-1])
+            tri["segments"] += [[i, i+1] for i in range(offset, offset+hole_pt_cnt-1)] + [[offset+hole_pt_cnt-1, offset]]
+            rp = shapelyPolygon(hole.coords).representative_point()
+            tri["holes"].append(list(*rp.coords))
+            offset += hole_pt_cnt
+        if len(tri["holes"]) == 0:
+            tri.pop("holes")
+        # perform triangulation
+        t = triangle.triangulate(tri, "p"+additional_opts)
+        vertices = t["vertices"]
+        faces = [[i+1 for i in j] for j in t["triangles"]]  # switch from 0- to 1-indexing
+        return vertices, faces
+    # MultiPolygon/GeometryCollection case (recursive)
+    elif shape.geometryType() in ["MultiPolygon", "GeometryCollection"]:
+        vertices, faces = [], []
+        for part in shape:
+            if part.geometryType() == "Polygon":
+                v, f = triangulate_polygon_constrained(part, additional_opts)
+                offset = len(vertices)
+                vertices += [list(i) for i in v]
+                faces += [[i+offset for i in j] for j in f]
+        return vertices, faces
+    # Unsupported geometry case
+    else:
+        raise NotImplementedError("Can't do constrained triangulation on geometry type " + shape.geometryType())
 
 
 def generate_obj_text_from_objects(objects):

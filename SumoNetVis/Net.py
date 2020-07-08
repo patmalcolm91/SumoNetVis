@@ -32,6 +32,8 @@ EUR_STYLE = "EUR"
 LANE_MARKINGS_STYLE = EUR_STYLE  # desired lane marking style
 PLOT_STOP_LINES = True  # whether to plot stop lines
 
+OBJ_TERRAIN_CLEANUP_TOLERANCE = 0.01  # clean terrain boundaries by dilating then eroding the net bounds by this amount
+
 
 def set_style(style=None, plot_stop_lines=None):
     """
@@ -838,7 +840,24 @@ class Net:
         edge = self.edges.get(edge_id, None)
         return edge.get_lane(lane_num) if edge is not None else None
 
-    def generate_obj_text(self, style=None, stripe_width_scale=1):
+    def _get_mask(self):
+        """
+        Returns a shape representing the area(s) covered by network lane and junction shapes.
+
+        :return: result of shapely.ops.unary_union(polys), where polys contains all junction and lane shapes.
+        """
+        polys = []
+        for junction in self.junctions.values():
+            if junction.shape is not None:
+                polys.append(junction.shape)
+        for edge in self.edges.values():
+            for lane in edge.lanes:
+                if lane.shape is not None:
+                    polys.append(lane.shape)
+        mask = ops.unary_union(polys)
+        return mask
+
+    def generate_obj_text(self, style=None, stripe_width_scale=1, terrain_distance=0, terrain_z=0, terrain_hi_q=False):
         """
         Generates the contents for a Wavefront-OBJ file which represents the network as a 3D model.
 
@@ -847,9 +866,15 @@ class Net:
 
         :param style: lane marking style to use for rendering ("USA" or "EUR"). Defaults to last used or "EUR".
         :param stripe_width_scale: scale factor for lane striping widths. Defaults to 1.
+        :param terrain_distance: if > 0: distance from network to which to generate terrain plane.
+        :param terrain_z: z value for terrain plane
+        :param terrain_hi_q: if True, generates "high-quality" mesh for terrain (no interior angles > 20°). WARNING: this can be very computationally intensive for large or complex networks.
         :return: None
         :type style: str
         :type stripe_width_scale: float
+        :type terrain_distance: float
+        :type terrain_z: float
+        :type terrain_hi_q: bool
         """
         if style is not None:
             set_style(style)
@@ -876,6 +901,15 @@ class Net:
                 objects.append(poly.get_as_3d_object())
         while None in objects:
             objects.remove(None)
+        if terrain_distance > 0:
+            net_mask = self._get_mask()
+            if OBJ_TERRAIN_CLEANUP_TOLERANCE > 0:
+                net_mask = net_mask.buffer(OBJ_TERRAIN_CLEANUP_TOLERANCE).buffer(-OBJ_TERRAIN_CLEANUP_TOLERANCE)
+            net_buffer = net_mask.buffer(terrain_distance, cap_style=2, join_style=2)
+            terrain_shape = net_buffer.difference(net_mask)
+            additional_opts = "q" if terrain_hi_q else ""
+            objects.append(_Utils.Object3D.from_shape_triangulated(terrain_shape, "terrain", "terrain", terrain_z,
+                                                                   additional_opts=additional_opts))
         return _Utils.generate_obj_text_from_objects(objects)
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
