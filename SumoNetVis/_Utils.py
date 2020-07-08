@@ -151,8 +151,8 @@ def triangulate_polygon_constrained(shape):
         for part in shape:
             if part.geometryType() == "Polygon":
                 v, f = triangulate_polygon_constrained(part)
+                offset = len(vertices)
                 vertices += [list(i) for i in v]
-                offset = len(faces)
                 faces += [[i+offset for i in j] for j in f]
         return vertices, faces
     # Unsupported geometry case
