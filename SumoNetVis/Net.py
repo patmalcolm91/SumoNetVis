@@ -576,7 +576,7 @@ class _Connection:
         if shape.is_empty:
             return None
         h = 0.15 if self.from_lane.lane_type() == "pedestrian" and self.to_lane.lane_type() == "pedestrian" else 0
-        material = "pedestrian_connection" if self.from_lane.lane_type() == "pedestrian_connection" and self.to_lane.lane_type() == "pedestrian" else "connection"
+        material = "pedestrian_connection" if self.from_lane.lane_type() == "pedestrian" and self.to_lane.lane_type() == "pedestrian" else "connection"
         return _Utils.Object3D.from_shape(orient(shape), "cxn_via_" + self.via_id, material, z=z, extrude_height=h, include_bottom_face=include_bottom_face)
 
     def plot_alignment(self, ax):
