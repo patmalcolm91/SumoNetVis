@@ -149,7 +149,11 @@ A flat planar "terrain" mesh can optionally be generated for all areas within a 
 See full documentation for further information.
 
 Each type of object is defined with a corresponding material (i.e. all bike lanes have the same material, all sidewalks,
-and so on), making it easy to quickly set the desired material properties before rendering.
+and so on), making it easy to quickly set the desired material properties before rendering. These can also be mapped
+to user-defined material names if desired (see full documentation). Default material names are of the following forms:
+for markings, "\[c\]\_marking", where \[c\] is the marking color ("w" for white, "y" for yellow, etc.);
+for lanes, "\[type\]\_lane", where \[type\] is the lane type ("pedestrian", "bicycle", "no_passenger", "none", "other");
+for junctions, "junction"; for terrain, "terrain".
 
 ## Documentation
 API documentation can be found [here](https://patmalcolm91.github.io/SumoNetVis/SumoNetVis.html)

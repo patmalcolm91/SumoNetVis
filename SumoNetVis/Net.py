@@ -857,7 +857,8 @@ class Net:
         mask = ops.unary_union(polys)
         return mask
 
-    def generate_obj_text(self, style=None, stripe_width_scale=1, terrain_distance=0, terrain_z=0, terrain_hi_q=False):
+    def generate_obj_text(self, style=None, stripe_width_scale=1, terrain_distance=0, terrain_z=0, terrain_hi_q=False,
+                          material_mapping=None):
         """
         Generates the contents for a Wavefront-OBJ file which represents the network as a 3D model.
 
@@ -869,12 +870,14 @@ class Net:
         :param terrain_distance: if > 0: distance from network to which to generate terrain plane.
         :param terrain_z: z value for terrain plane
         :param terrain_hi_q: if True, generates "high-quality" mesh for terrain (no interior angles > 20°). WARNING: this can be very computationally intensive for large or complex networks.
+        :param material_mapping: a dictionary mapping SumoNetVis-generated material names to user-defined ones
         :return: None
         :type style: str
         :type stripe_width_scale: float
         :type terrain_distance: float
         :type terrain_z: float
         :type terrain_hi_q: bool
+        :type material_mapping: dict
         """
         if style is not None:
             set_style(style)
@@ -910,7 +913,7 @@ class Net:
             additional_opts = "q" if terrain_hi_q else ""
             objects.append(_Utils.Object3D.from_shape_triangulated(terrain_shape, "terrain", "terrain", terrain_z,
                                                                    additional_opts=additional_opts))
-        return _Utils.generate_obj_text_from_objects(objects)
+        return _Utils.generate_obj_text_from_objects(objects, material_mapping=material_mapping)
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
              plot_stop_lines=None, lane_kwargs=None, lane_marking_kwargs=None, junction_kwargs=None,
