@@ -29,6 +29,7 @@ import SumoNetVis
 
 ### Dependencies
 * shapely (>=1.7.0 for stop lines and OBJ export)
+* triangle (for OBJ terrain export)
 * matplotlib
 * numpy
 
@@ -143,6 +144,9 @@ with open("busstops.obj", "w") as f:
 
 The axis configuration in the generated file is Y-Forward, Z-Up. Check these settings if the orientation of the model
 is incorrect when importing the file into a 3D modelling program.
+
+A flat planar "terrain" mesh can optionally be generated for all areas within a given distance of a network object.
+See full documentation for further information.
 
 Each type of object is defined with a corresponding material (i.e. all bike lanes have the same material, all sidewalks,
 and so on), making it easy to quickly set the desired material properties before rendering.
