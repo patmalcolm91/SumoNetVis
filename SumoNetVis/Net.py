@@ -604,7 +604,11 @@ class _Request:
         self.index = int(attrib["index"])
         self.response = attrib["response"]
         self.foes = attrib["foes"]
-        self.cont = attrib["cont"]
+        if "cont" in attrib:
+            self.cont = attrib["cont"]
+        else:
+            self.cont = "0"
+            warnings.warn("Request object missing attribute 'cont'. Defaulting to false.")
         self.parentJunction = parent_junction
 
 
