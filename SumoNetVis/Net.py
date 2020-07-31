@@ -247,6 +247,8 @@ class _Lane:
         coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
         self.alignment = LineString(coords)
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
+        if self.shape.geometryType() != "Polygon":
+            self.shape = self.shape.buffer(0)
         self.parentEdge = None
         self.stop_offsets = []
         self.incoming_connections = []
@@ -309,8 +311,12 @@ class _Lane:
             kwargs["lw"] = 0
         if "color" not in kwargs:
             kwargs["color"] = self.lane_color()
-        poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
-        ax.add_patch(poly)
+        try:
+            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
+        except NotImplementedError:
+            warnings.warn("Can't plot non-polygonal geometry of lane " + self.id)
+        else:
+            ax.add_patch(poly)
 
     def inverse_lane_index(self):
         """
