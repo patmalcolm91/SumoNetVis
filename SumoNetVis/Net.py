@@ -762,6 +762,18 @@ class Net:
         for edge in self.edges.values():
             edge.from_junction = self.junctions.get(edge.from_junction_id, None)
             edge.to_junction = self.junctions.get(edge.to_junction_id, None)
+        # link edges and lanes to connections
+        for connection in self.connections:
+            if connection.via_id is not None:
+                connection.via_lane = self._get_lane(connection.via_id)
+            connection.from_edge = self.edges.get(connection.from_edge_id, None)
+            if connection.from_edge is not None:
+                connection.from_lane = connection.from_edge.get_lane(connection.from_lane_index)
+                connection.from_lane.outgoing_connections.append(connection)
+            connection.to_edge = self.edges.get(connection.to_edge_id, None)
+            if connection.to_edge is not None:
+                connection.to_lane = connection.to_edge.get_lane(connection.to_lane_index)
+                connection.to_lane.incoming_connections.append(connection)
         # make junction-related links
         for junction in self.junctions.values():
             if junction.type == "internal":
@@ -778,8 +790,6 @@ class Net:
                     junction.intLanes.append(intLane)
             # link connections and requests to incoming lanes
             for lane in junction.incLanes:
-                lane.incoming_connections = self._get_connections_to_lane(lane.id)
-                lane.outgoing_connections = self._get_connections_from_lane(lane.id)
                 for cxn in lane.outgoing_connections:
                     if cxn.via_id is not None:
                         reqs = []
@@ -794,16 +804,6 @@ class Net:
                             reqs.append(req)
                         for req in reqs:
                             lane.requests.append(req)
-        # link edges and lanes to connections
-        for connection in self.connections:
-            if connection.via_id is not None:
-                connection.via_lane = self._get_lane(connection.via_id)
-            connection.from_edge = self.edges.get(connection.from_edge_id, None)
-            if connection.from_edge is not None:
-                connection.from_lane = connection.from_edge.get_lane(connection.from_lane_index)
-            connection.to_edge = self.edges.get(connection.to_edge_id, None)
-            if connection.to_edge is not None:
-                connection.to_lane = connection.to_edge.get_lane(connection.to_lane_index)
 
     def load_additional_file(self, file):
         addl = _Addls.Additionals(file, reference_net=self)
