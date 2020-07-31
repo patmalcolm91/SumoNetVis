@@ -314,7 +314,7 @@ class _Lane:
         try:
             poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
         except NotImplementedError:
-            warnings.warn("Can't plot non-polygonal geometry of lane " + self.id)
+            warnings.warn("Can't plot non-polygonal geometry of lane " + self.id, stacklevel=2)
         else:
             ax.add_patch(poly)
 
@@ -392,7 +392,7 @@ class _Lane:
             try:
                 obj = marking.get_as_3d_object(z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
             except NotImplementedError:
-                warnings.warn("Could not generate geometry for " + marking.purpose + " marking of lane " + self.id)
+                warnings.warn("Could not generate geometry for " + marking.purpose + " marking of lane " + self.id, stacklevel=2)
             else:
                 objects.append(obj)
         return objects
@@ -482,7 +482,7 @@ class _Lane:
         if PLOT_STOP_LINES and self.allows not in ["pedestrian", "ship"] and self._requires_stop_line():
             for stop_line_location in self.get_stop_line_locations():
                 if not hasattr(ops, "substring"):
-                    warnings.warn("Shapely >=1.7.0 required for drawing stop lines.")
+                    warnings.warn("Shapely >=1.7.0 required for drawing stop lines.", stacklevel=2)
                     break
                 pos = self.alignment.length - stop_line_location - slw/2
                 end_cl = ops.substring(self.alignment, pos-1, pos)
@@ -504,9 +504,9 @@ class _Lane:
             try:
                 marking.plot(ax, **kwargs)
             except NotImplementedError:
-                print("Can't print center stripe for lane " + self.id)
+                warnings.warn("Can't plot center stripe for lane " + self.id, stacklevel=2)
             except ValueError:
-                print("Generated lane marking geometry is empty for lane " + self.id)
+                warnings.warn("Generated lane marking geometry is empty for lane " + self.id, stacklevel=2)
 
 
 class _Connection:
@@ -614,7 +614,7 @@ class _Request:
             self.cont = attrib["cont"]
         else:
             self.cont = "0"
-            warnings.warn("Request object missing attribute 'cont'. Defaulting to false.")
+            warnings.warn("Request object missing attribute 'cont'. Defaulting to false.", stacklevel=2)
         self.parentJunction = parent_junction
 
 
