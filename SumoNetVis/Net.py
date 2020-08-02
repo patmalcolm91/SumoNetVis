@@ -8,6 +8,7 @@ from shapely.geometry import *
 from shapely.geometry.polygon import orient
 import shapely.ops as ops
 import matplotlib.patches
+import matplotlib.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import Union
@@ -724,8 +725,15 @@ class Net:
         self.edges = dict()
         self.junctions = dict()
         self.connections = []
+        self.netOffset = (0, 0)
+        self.projParameter = "!"
         net = ET.parse(file).getroot()
         for obj in net:
+            if obj.tag == "location":
+                if "netOffset" in obj.attrib:
+                    self.netOffset = tuple(float(i) for i in obj.attrib["netOffset"].split(","))
+                if "projParameter" in obj.attrib:
+                    self.projParameter = obj.attrib["projParameter"]
             if obj.tag == "edge":
                 if "function" in obj.attrib and obj.attrib["function"] == "walkingarea":
                     continue
@@ -815,13 +823,15 @@ class Net:
         addl = _Addls.Additionals(file, reference_net=self)
         self.additionals.append(addl)
 
-    def _get_extents(self):
+    def _get_extents(self, apply_netOffset=False):
         lane_geoms = []
         for edge in self.edges.values():
             for lane in edge.lanes:
                 lane_geoms.append(lane.shape)
         polygons = MultiPolygon(lane_geoms)
-        return polygons.bounds
+        xoff, yoff = self.netOffset if apply_netOffset else (0, 0)
+        bounds = [sum(i) for i in zip(polygons.bounds, (-xoff, -yoff, -xoff, -yoff))]
+        return bounds
 
     def _get_connections_from_lane(self, lane_id):
         cxns = []
@@ -926,8 +936,8 @@ class Net:
         return _Utils.generate_obj_text_from_objects(objects, material_mapping=material_mapping)
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
-             plot_stop_lines=None, lane_kwargs=None, lane_marking_kwargs=None, junction_kwargs=None,
-             additionals_kwargs=None, **kwargs):
+             plot_stop_lines=None, apply_netOffset=False, lane_kwargs=None, lane_marking_kwargs=None,
+             junction_kwargs=None, additionals_kwargs=None, **kwargs):
         """
         Plots the Net. Kwargs are passed to the plotting functions, with object-specific kwargs overriding general ones.
 
@@ -937,6 +947,7 @@ class Net:
         :param style: lane marking style to use for plotting ("USA" or "EUR"). Defaults to last used or "EUR".
         :param stripe_width_scale: scale factor for lane striping widths
         :param plot_stop_lines: whether to plot stop lines
+        :param apply_netOffset: whether to translate the network by the inverse of the netOffset value
         :param lane_kwargs: kwargs to pass to the lane plotting function (matplotlib.patches.Polygon())
         :param lane_marking_kwargs: kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
         :param junction_kwargs: kwargs to pass to the junction plotting function (matplotlib.patches.Polygon())
@@ -948,6 +959,7 @@ class Net:
         :type style: str
         :type stripe_width_scale: float
         :type plot_stop_lines: bool
+        :type apply_netOffset: bool
         """
         if style is not None:
             set_style(style=style)
@@ -956,6 +968,12 @@ class Net:
         set_stripe_width_scale(stripe_width_scale)
         if ax is None:
             ax = plt.gca()
+        xoff, yoff = self.netOffset
+        if apply_netOffset:
+            tr = transforms.Affine2D().translate(-xoff, -yoff) + ax.transData
+            if "transform" in kwargs:
+                tr += kwargs["transform"]
+            kwargs["transform"] = tr
         if junction_kwargs is None:
             junction_kwargs = dict()
         if lane_kwargs is None:
@@ -965,7 +983,7 @@ class Net:
         if additionals_kwargs is None:
             additionals_kwargs = dict()
         if zoom_to_extents and not clip_to_limits:
-            x_min, y_min, x_max, y_max = self._get_extents()
+            x_min, y_min, x_max, y_max = self._get_extents(apply_netOffset)
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
         ax.set_clip_box(ax.get_window_extent())

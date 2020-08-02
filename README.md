@@ -57,6 +57,7 @@ the ```Net.plot()``` function takes the following optional parameters:
 * style: lane marking style to use ("USA" or "EUR")
 * stripe_width_scale: scale factor for lane marking widths (defaults to 1)
 * plot_stop_lines: whether to plot stop lines
+* apply_netOffset: whether to translate the network by the inverse of the netOffset value
 * lane_kwargs: dict of kwargs to pass to the lane plotting function (matplotlib.patches.Polygon()), for example alpha
 * lane_marking_kwargs: dict of kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
 * junction_kwargs: dict of kwargs to pass to the junction plotting function (matplotlib.patches.Polygon())
