@@ -61,6 +61,7 @@ class _Poly:
         if self.imgFile is not None:
             warnings.warn("Display of polygons in additional files as images not supported.")
         self.angle = float(attrib.get("angle", 0))
+        self.params = dict()
 
     def get_as_3d_object(self, z=0, extrude_height=0, include_bottom_face=False):
         """
@@ -143,6 +144,7 @@ class _POI:
         self.width = float(attrib.get("width", 0))
         self.height = float(attrib.get("height", 0))
         self.angle = float(attrib.get("angle", 0))
+        self.params = dict()
 
     def plot(self, ax, **kwargs):
         """
@@ -331,9 +333,15 @@ class Additionals:
             if obj.tag == "poly":
                 poly = _Poly(obj.attrib)
                 self.polys[poly.id] = poly
+                for polyChild in obj:
+                    if polyChild.tag == "param":
+                        poly.params[polyChild.attrib["key"]] = polyChild.attrib["value"]
             elif obj.tag == "poi":
                 poi = _POI(obj.attrib, reference_net=reference_net)
                 self.pois[poi.id] = poi
+                for poiChild in obj:
+                    if poiChild.tag == "param":
+                        poi.params[poiChild.attrib["key"]] = poiChild.attrib["value"]
             elif obj.tag in ["busStop", "trainStop"]:
                 bus_stop = _BusStop(obj.attrib, reference_net=reference_net)
                 self.bus_stops[bus_stop.id] = bus_stop

@@ -83,6 +83,7 @@ class _Edge:
         self.to_junction = None
         self.lanes = []
         self.stop_offsets = []
+        self.params = dict()
 
     def append_lane(self, lane):
         """
@@ -255,6 +256,7 @@ class _Lane:
         self.incoming_connections = []
         self.outgoing_connections = []
         self.requests = []  # type: list[_Request]
+        self.params = dict()
 
     def lane_type(self):
         """
@@ -634,6 +636,7 @@ class _Junction:
         self.incLanes = []
         self.intLanes = []
         self._requests = []
+        self.params = dict()
         self.shape = None
         if "shape" in attrib:
             coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
@@ -741,11 +744,15 @@ class Net:
                 for edgeChild in obj:
                     if edgeChild.tag == "stopOffset":
                         edge.append_stop_offset(edgeChild.attrib)
+                    elif edgeChild.tag == "param":
+                        edge.params[edgeChild.attrib["key"]] = edgeChild.attrib["value"]
                     elif edgeChild.tag == "lane":
                         lane = _Lane(edgeChild.attrib)
                         for laneChild in edgeChild:
                             if laneChild.tag == "stopOffset":
                                 lane.append_stop_offset(laneChild.attrib)
+                            elif laneChild.tag == "param":
+                                lane.params[laneChild.attrib["key"]] = laneChild.attrib["value"]
                         edge.append_lane(lane)
                 self.edges[edge.id] = edge
             elif obj.tag == "junction":
@@ -754,6 +761,8 @@ class Net:
                     if jnChild.tag == "request":
                         req = _Request(jnChild.attrib)
                         junction.append_request(req)
+                    elif jnChild.tag == "param":
+                        junction.params[jnChild.attrib["key"]] = jnChild.attrib["value"]
                 self.junctions[junction.id] = junction
             elif obj.tag == "connection":
                 connection = _Connection(obj.attrib)
