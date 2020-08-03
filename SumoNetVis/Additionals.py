@@ -63,19 +63,30 @@ class _Poly:
         self.angle = float(attrib.get("angle", 0))
         self.params = dict()
 
-    def get_as_3d_object(self, z=0, extrude_height=0, include_bottom_face=False):
+    def get_as_3d_object(self, z=0, extrude_height=0, include_bottom_face=False, material_param=None,
+                         extrude_height_param=None, extrude_height_param_transform=None):
         """
         Generates a list of Object3D objects from the bus stop area and markings.
 
         :param z: desired z coordinate of base of object
         :param extrude_height: amount by which to extrude the polygon along the z axis.
         :param include_bottom_face: whether to include the bottom face when extruding.
+        :param material_param: generic parameter to use to override material, if present
+        :param extrude_height_param: generic parameter to use to override extrude height, if present
+        :param extrude_height_param_transform: function to apply to extrude_height_param values. Defaults to str->float conversion.
         :return: Object3D representing the polygon
         :type z: float
         :type extrude_height: float
         :type include_bottom_face: bool
+        :type material_param: str
+        :type extrude_height_param: str
         """
-        return _Utils.Object3D.from_shape(self.shape, self.id, self.type+"_poly", z=z, extrude_height=extrude_height,
+        if extrude_height_param is not None and extrude_height_param in self.params:
+            if extrude_height_param_transform is None:
+                extrude_height_param_transform = lambda x: float(x) if x is not None else extrude_height
+            extrude_height = extrude_height_param_transform(self.params[extrude_height_param])
+        material = self.params.get(material_param, self.type+"_poly")
+        return _Utils.Object3D.from_shape(self.shape, self.id, material, z=z, extrude_height=extrude_height,
                                           include_bottom_face=include_bottom_face, include_top_face=self.fill)
 
     def plot(self, ax, **kwargs):

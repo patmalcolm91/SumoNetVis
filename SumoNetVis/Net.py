@@ -400,20 +400,31 @@ class _Lane:
                 objects.append(obj)
         return objects
 
-    def get_as_3d_object(self, z=0, include_bottom_face=False):
+    def get_as_3d_object(self, z=0, include_bottom_face=False, material_param=None, extrude_height_param=None,
+                         extrude_height_param_transform=None):
         """
         Generates an Object3D from the lane.
 
         :param z: z coordinate of junction
         :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :param material_param: generic parameter to use to override material, if present
+        :param extrude_height_param: generic parameter to use to override extrude height, if present
+        :param extrude_height_param_transform: function to apply to extrude_height_param values. Defaults to str->float conversion.
         :return: Object3D
         :type z: float
         :type include_bottom_face: bool
+        :type material_param: str
+        :type extrude_height_param: str
         """
         if self.shape.is_empty:
             return None
         h = 0.15 if self.lane_type() == "pedestrian" else 0
-        return _Utils.Object3D.from_shape(orient(self.shape), self.id, self.lane_type()+"_lane", z=z, extrude_height=h, include_bottom_face=include_bottom_face)
+        if extrude_height_param is not None and extrude_height_param in self.params:
+            if extrude_height_param_transform is None:
+                extrude_height_param_transform = lambda x: float(x) if x is not None else h
+            h = extrude_height_param_transform(self.params[extrude_height_param])
+        material = self.params.get(material_param, self.lane_type()+"_lane")
+        return _Utils.Object3D.from_shape(orient(self.shape), self.id, material, z=z, extrude_height=h, include_bottom_face=include_bottom_face)
 
     def _guess_lane_markings(self):
         """
@@ -681,20 +692,31 @@ class _Junction:
         else:
             return self.get_request_by_index(index)
 
-    def get_as_3d_object(self, z=0, extrude_height=0, include_bottom_face=False):
+    def get_as_3d_object(self, z=0, extrude_height=0, include_bottom_face=False, material_param=None,
+                         extrude_height_param=None, extrude_height_param_transform=None):
         """
         Generates an Object3D from the junction.
 
         :param z: z coordinate of junction
         :param extrude_height: distance by which to extrude the junction
         :param include_bottom_face: whether to include the bottom face of the extruded geometry.
+        :param material_param: generic parameter to use to override material, if present
+        :param extrude_height_param: generic parameter to use to override extrude height, if present
+        :param extrude_height_param_transform: function to apply to extrude_height_param values. Defaults to str->float conversion.
         :return: Object3D
         :type z: float
         :type extrude_height: float
         :type include_bottom_face: bool
+        :type material_param: str
+        :type extrude_height_param: str
         """
         if self.shape.is_empty:
             return None
+        if extrude_height_param is not None and extrude_height_param in self.params:
+            if extrude_height_param_transform is None:
+                extrude_height_param_transform = lambda x: float(x) if x is not None else extrude_height
+            extrude_height = extrude_height_param_transform(self.params[extrude_height_param])
+        material = self.params.get(material_param, "junction")
         return _Utils.Object3D.from_shape(orient(self.shape), self.id, "junction", z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
 
     def plot(self, ax, **kwargs):
@@ -887,12 +909,15 @@ class Net:
         return mask
 
     def generate_obj_text(self, style=None, stripe_width_scale=1, terrain_distance=0, terrain_z=0, terrain_hi_q=False,
-                          material_mapping=None):
+                          material_mapping=None, material_param=None, extrude_height_param=None,
+                          extrude_height_param_transform=None):
         """
         Generates the contents for a Wavefront-OBJ file which represents the network as a 3D model.
 
         This text can be saved as text to a file with the *.obj extension and then imported into a 3D modelling program.
         The axis configuration in the generated file is Y-Forward, Z-Up.
+
+        Sumo "generic parameters" can be used to override the extrude height and material of lanes, junctions, and polys.
 
         :param style: lane marking style to use for rendering ("USA" or "EUR"). Defaults to last used or "EUR".
         :param stripe_width_scale: scale factor for lane striping widths. Defaults to 1.
@@ -900,6 +925,9 @@ class Net:
         :param terrain_z: z value for terrain plane
         :param terrain_hi_q: if True, generates "high-quality" mesh for terrain (no interior angles > 20°). WARNING: this can be very computationally intensive for large or complex networks.
         :param material_mapping: a dictionary mapping SumoNetVis-generated material names to user-defined ones
+        :param material_param: generic parameter to use to override material, if present. material_mapping is applied also to this value.
+        :param extrude_height_param: generic parameter to use to override extrude height, if present
+        :param extrude_height_param_transform: function to apply to extrude_height_param values. Defaults to str->float conversion.
         :return: None
         :type style: str
         :type stripe_width_scale: float
@@ -907,6 +935,8 @@ class Net:
         :type terrain_z: float
         :type terrain_hi_q: bool
         :type material_mapping: dict
+        :type material_param: str
+        :type extrude_height_param: str
         """
         if style is not None:
             set_style(style)
@@ -917,11 +947,15 @@ class Net:
                 continue
             for lane in edge.lanes:
                 if edge.function not in ["crossing", "walkingarea"]:
-                    objects.append(lane.get_as_3d_object())
+                    objects.append(lane.get_as_3d_object(material_param=material_param,
+                                                         extrude_height_param=extrude_height_param,
+                                                         extrude_height_param_transform=extrude_height_param_transform))
                 objects += lane.get_markings_as_3d_objects()
         for junction in self.junctions.values():
             if junction.shape is not None:
-                objects.append(junction.get_as_3d_object())
+                objects.append(junction.get_as_3d_object(material_param=material_param,
+                                                         extrude_height_param=extrude_height_param,
+                                                         extrude_height_param_transform=extrude_height_param_transform))
         for connection in self.connections:
             if connection.via_id is not None:
                 if connection.from_lane.lane_type() == "pedestrian" and connection.to_lane.lane_type() == "pedestrian":
@@ -930,7 +964,9 @@ class Net:
             for bus_stop in additional.bus_stops.values():
                 objects += bus_stop.get_as_3d_objects()
             for poly in additional.polys.values():
-                objects.append(poly.get_as_3d_object())
+                objects.append(poly.get_as_3d_object(material_param=material_param,
+                                                     extrude_height_param=extrude_height_param,
+                                                     extrude_height_param_transform=extrude_height_param_transform))
         while None in objects:
             objects.remove(None)
         if terrain_distance > 0:
