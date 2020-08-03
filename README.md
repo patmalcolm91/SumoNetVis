@@ -128,6 +128,17 @@ relative to a lane in the network.
 Several styles of bus stop are supported. The style can be changed using the function
 ```SumoNetVis.set_bus_stop_style()```. See documentation for further details
 
+### Generic Parameters
+Generic parameter values are loaded for supported objects (edges, lanes, junctions, vehicles, polys) and are stored in
+an attribute called ```params``` in each of the respective object classes. These can be used to aid in implementing
+custom functionality on top of SumoNetVis. There are also some built-in features which can make use of these parameters.
+For example:
+* trajectory colorization
+* OBJ export material
+* OBJ export extrude height
+
+See the Sumo documentation on generic parameters as well as the full SumoNetVis documentation for more information.
+
 ### OBJ Export
 
 The Wavefront-OBJ format is a text-based file format. The ```Net.generate_obj_text()``` method generates the contents
