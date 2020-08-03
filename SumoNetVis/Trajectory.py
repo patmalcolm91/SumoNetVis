@@ -279,18 +279,32 @@ class Trajectories:
                 self.start = time
             self.end = time
             for veh in timestep:
-                if veh.tag == "vehicle":
+                if veh.tag in ["vehicle", "person", "container"]:
                     vehID = veh.attrib["id"]
-                    type = veh.attrib["type"]
+                    type = veh.attrib.get("type", "")
                     if vehID not in trajectories:
                         trajectories[vehID] = Trajectory(vehID, type)
                     x = float(veh.attrib["x"])
                     y = float(veh.attrib["y"])
-                    lane = veh.attrib["lane"]
+                    lane = veh.attrib.get("lane", "")
                     speed = float(veh.attrib["speed"])
                     angle = float(veh.attrib["angle"])
                     params = {key: veh.attrib[key] for key in veh.attrib if key not in ["id", "type", "x", "y", "lane", "speed", "angle"]}
                     trajectories[vehID]._append_point(time, x, y, speed, angle, lane, params=params)
+                    for vehChild in veh:
+                        if vehChild.tag in ["person", "container"]:
+                            objID = vehChild.attrib["id"]
+                            type = vehChild.attrib.get("type", "")
+                            if objID not in trajectories:
+                                trajectories[objID] = Trajectory(objID, type)
+                            x = float(vehChild.attrib["x"]) if "x" in vehChild.attrib else x
+                            y = float(vehChild.attrib["y"]) if "y" in vehChild.attrib else y
+                            lane = vehChild.attrib.get("lane", "")
+                            speed = float(vehChild.attrib["speed"]) if "speed" in vehChild.attrib else speed
+                            angle = float(vehChild.attrib["angle"]) if "angle" in vehChild.attrib else angle
+                            params = {key: vehChild.attrib[key] for key in vehChild.attrib if key not in ["id", "type", "x", "y", "lane", "speed", "angle"]}
+                            params = {"_parent_vehicle": vehID, **params}
+                            trajectories[objID]._append_point(time, x, y, speed, angle, lane, params=params)
         for vehID in trajectories:
             self._append(trajectories[vehID])
 
