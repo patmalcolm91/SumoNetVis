@@ -820,7 +820,7 @@ class Net:
                             lane.requests.append(req)
 
     def load_additional_file(self, file):
-        addl = _Addls.Additionals(file, reference_net=self)
+        addl = _Addls(file, reference_net=self)
         self.additionals.append(addl)
 
     def _get_extents(self, apply_netOffset=False):
