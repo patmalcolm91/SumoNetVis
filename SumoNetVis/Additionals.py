@@ -95,7 +95,7 @@ class _Poly:
 
         :param ax: matplotlib Axes object
         :param kwargs: kwargs to pass to the plotting function
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         kwargs = {"zorder": self.layer-110 if self.layer <= 0 else self.layer-90, "color": self.color, **kwargs}
@@ -104,10 +104,12 @@ class _Poly:
                 kwargs["lw"] = 0
             poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
             ax.add_patch(poly)
+            return poly
         else:
             x, y = zip(*self.shape.coords)
             line = _Utils.LineDataUnits(x, y, linewidth=self.lineWidth, **kwargs)
             ax.add_line(line)
+            return line
 
 
 class _POI:
@@ -163,7 +165,7 @@ class _POI:
 
         :param ax: matplotlib Axes object
         :param kwargs: kwargs to pass to the plotting function
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         kwargs = {"color": self.color, "radius": 1,
@@ -171,6 +173,7 @@ class _POI:
         if self.x is not None and self.y is not None:
             circle = matplotlib.patches.Circle((self.x, self.y), **kwargs)
             ax.add_patch(circle)
+            return circle
 
 
 class _BusStop:
@@ -276,11 +279,12 @@ class _BusStop:
         :param ax: matplotlib Axes object
         :param area_kwargs: kwargs to pass to area plotting function
         :param marking_kwargs: kwargs to pass to marking plotting function
-        :return: None
+        :return: list of artists
         :type ax: plt.Axes
         :type area_kwargs: dict
         :type marking_kwargs: dict
         """
+        artists = []
         outline = self._get_shape()
         if area_kwargs is None:
             area_kwargs = dict()
@@ -294,8 +298,11 @@ class _BusStop:
             area_kwargs = {"color": area_color, **area_kwargs}
             poly = matplotlib.patches.Polygon(outline.boundary.coords, True, **area_kwargs)
             ax.add_patch(poly)
+            artists.append(poly)
         for marking in self._get_markings():
-            marking.plot(ax, **marking_kwargs)
+            artist = marking.plot(ax, **marking_kwargs)
+            artists.append(artist)
+        return artists
 
     def get_as_3d_objects(self, area_kwargs=None, markings_kwargs=None, **kwargs):
         """
@@ -363,13 +370,16 @@ class Additionals:
 
         :param ax: matplotlib Axes object
         :param kwargs: kwargs to pass to the plotting function
-        :return: None
+        :return: list of artists
         :type ax: plt.Axes
         """
+        artists = []
         if ax is None:
             ax = plt.gca()
         for poly in self.polys.values():
-            poly.plot(ax, **kwargs)
+            artist = poly.plot(ax, **kwargs)
+            artists.append(artist)
+        return artists
 
     def plot_pois(self, ax=None, **kwargs):
         """
@@ -377,13 +387,16 @@ class Additionals:
 
         :param ax: matplotlib Axes object
         :param kwargs: kwargs to pass to the plotting function
-        :return: None
+        :return: list of artists
         :type ax: plt.Axes
         """
+        artists = []
         if ax is None:
             ax = plt.gca()
         for poi in self.pois.values():
-            poi.plot(ax, **kwargs)
+            artist = poi.plot(ax, **kwargs)
+            artists.append(artist)
+        return artists
 
     def generate_bus_stops_obj_text(self, area_kwargs=None, markings_kwargs=None, **kwargs):
         """
@@ -426,12 +439,15 @@ class Additionals:
         :param ax: matplotlib Axes object
         :param area_kwargs: kwargs to pass to the bus stop area plotting function
         :param marking_kwargs: kwargs to pass to the bus stop markings plotting function
-        :return: None
+        :return: list of artists
         """
+        artists = []
         if ax is None:
             ax = plt.gca()
         for bus_stop in self.bus_stops.values():
-            bus_stop.plot(ax, area_kwargs, marking_kwargs, **kwargs)
+            artist = bus_stop.plot(ax, area_kwargs, marking_kwargs, **kwargs)
+            artists += artist
+        return artists
 
     def plot(self, ax=None, polygon_kwargs=None, poi_kwargs=None, bus_stop_area_kwargs=None,
              bus_stop_marking_kwargs=None, **kwargs):
@@ -444,7 +460,7 @@ class Additionals:
         :param poi_kwargs: kwargs to pass to the POI plotting function
         :param bus_stop_area_kwargs: kwargs to pass to the bus stop area plotting function
         :param bus_stop_marking_kwargs: kwargs to pass to the bus stop markings plotting function
-        :return: None
+        :return: SumoNetVis.ArtistCollection object containing all generated artists
         :type ax: plt.Axes
         :type polygon_kwargs: dict
         :type poi_kwargs: dict
@@ -457,12 +473,17 @@ class Additionals:
             polygon_kwargs = dict()
         if poi_kwargs is None:
             poi_kwargs = dict()
+        artist_collection = _Utils.ArtistCollection()
         for poly in self.polys.values():
-            poly.plot(ax, **{**kwargs, **polygon_kwargs})
+            artist = poly.plot(ax, **{**kwargs, **polygon_kwargs})
+            artist_collection.polys.append(artist)
         for poi in self.pois.values():
-            poi.plot(ax, **{**kwargs, **poi_kwargs})
+            artist = poi.plot(ax, **{**kwargs, **poi_kwargs})
+            artist_collection.pois.append(artist)
         for bus_stop in self.bus_stops.values():
-            bus_stop.plot(ax, area_kwargs=bus_stop_area_kwargs, marking_kwargs=bus_stop_marking_kwargs, **kwargs)
+            artists = bus_stop.plot(ax, area_kwargs=bus_stop_area_kwargs, marking_kwargs=bus_stop_marking_kwargs, **kwargs)
+            artist_collection.bus_stops += artists
+        return artist_collection
 
 
 if __name__ == "__main__":

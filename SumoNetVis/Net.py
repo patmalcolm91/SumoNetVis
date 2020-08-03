@@ -144,16 +144,20 @@ class _Edge:
         :param ax: matplotlib Axes object
         :param lane_kwargs: kwargs to pass to the lane plotting function (matplotlib.patches.Polygon())
         :param lane_marking_kwargs: kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
-        :return: None
+        :return: list of lane artists, list of lane marking artists
         :type ax: plt.Axes
         """
+        lane_artists, lane_marking_artists = [], []
         if lane_kwargs is None:
             lane_kwargs = dict()
         if lane_marking_kwargs is None:
             lane_marking_kwargs = dict()
         for lane in self.lanes:
-            lane.plot_shape(ax, **{**kwargs, **lane_kwargs})
-            lane.plot_lane_markings(ax, **{**kwargs, **lane_marking_kwargs})
+            lane_artist = lane.plot_shape(ax, **{**kwargs, **lane_kwargs})
+            lane_marking_artist = lane.plot_lane_markings(ax, **{**kwargs, **lane_marking_kwargs})
+            lane_artists.append(lane_artist)
+            lane_marking_artists += lane_marking_artist
+        return lane_artists, lane_marking_artists
 
 
 class _LaneMarking:
@@ -179,13 +183,14 @@ class _LaneMarking:
 
         :param ax: matplotlib Axes object
         :param kwargs: kwargs to pass to Line2D
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         color = kwargs.pop("color") if "color" in kwargs else self.color
         x, y = zip(*self.alignment.coords)
         line = _Utils.LineDataUnits(x, y, linewidth=self.linewidth, color=color, dashes=self.dashes, **kwargs)
         ax.add_line(line)
+        return line
 
     def get_as_shape(self, cap_style=CAP_STYLE.flat):
         """
@@ -296,18 +301,19 @@ class _Lane:
         Plots the centerline alignment of the lane
 
         :param ax: matplotlib Axes object
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         x, y = zip(*self.alignment.coords)
-        ax.plot(x, y)
+        artist, = ax.plot(x, y)
+        return artist
 
     def plot_shape(self, ax, **kwargs):
         """
         Plots the entire shape of the lane
 
         :param ax: matplotlib Axes object
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         if "lw" not in kwargs and "linewidth" not in kwargs:
@@ -320,6 +326,7 @@ class _Lane:
             warnings.warn("Can't plot non-polygonal geometry of lane " + self.id, stacklevel=2)
         else:
             ax.add_patch(poly)
+            return poly
 
     def inverse_lane_index(self):
         """
@@ -511,16 +518,20 @@ class _Lane:
         Guesses and plots some simple lane markings.
 
         :param ax: matplotlib Axes object
-        :return: None
+        :return: list of artists
         :type ax: plt.Axes
         """
+        artists = []
         for marking in self._guess_lane_markings():
             try:
-                marking.plot(ax, **kwargs)
+                artist = marking.plot(ax, **kwargs)
             except NotImplementedError:
                 warnings.warn("Can't plot center stripe for lane " + self.id, stacklevel=2)
             except ValueError:
                 warnings.warn("Generated lane marking geometry is empty for lane " + self.id, stacklevel=2)
+            else:
+                artists.append(artist)
+        return artists
 
 
 class _Connection:
@@ -603,12 +614,13 @@ class _Connection:
         """
         Plot the centerline of the connection.
         :param ax: matplotlib Axes object
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         if self.shape:
             x, y = zip(*self.shape.coords)
-            ax.plot(x, y)
+            line, = ax.plot(x, y)
+            return line
 
 
 class _Request:
@@ -724,7 +736,7 @@ class _Junction:
         Plots the Junction.
 
         :param ax: matplotlib Axes object
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         if self.shape is not None:
@@ -734,6 +746,7 @@ class _Junction:
                 kwargs["color"] = COLOR_SCHEME["junction"]
             poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
             ax.add_patch(poly)
+            return poly
 
 
 class Net:
@@ -997,7 +1010,7 @@ class Net:
         :param lane_marking_kwargs: kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
         :param junction_kwargs: kwargs to pass to the junction plotting function (matplotlib.patches.Polygon())
         :param additionals_kwargs: kwargs to pass to the additionals plotting function (Additionals.plot())
-        :return: None
+        :return: SumoNetVis.ArtistCollection object containing all generated artists
         :type ax: plt.Axes
         :type clip_to_limits: bool
         :type zoom_to_extents: bool
@@ -1036,14 +1049,20 @@ class Net:
         ymin, ymax = ax.get_ylim()
         bounds = [[xmin, ymax], [xmax, ymax], [xmax, ymin], [xmin, ymin]]
         window = Polygon(bounds)
+        artist_collection = _Utils.ArtistCollection()
         for edge in self.edges.values():
             if edge.function != "internal" and (not clip_to_limits or edge.intersects(window)):
-                edge.plot(ax, {"zorder": -100, **lane_kwargs}, {"zorder": -90, **lane_marking_kwargs}, **kwargs)
+                la, lma = edge.plot(ax, {"zorder": -100, **lane_kwargs}, {"zorder": -90, **lane_marking_kwargs}, **kwargs)
+                artist_collection.lanes += la
+                artist_collection.lane_markings += lma
         for junction in self.junctions.values():
             if not clip_to_limits or (junction.shape is not None and junction.shape.intersects(window)):
-                junction.plot(ax, **{"zorder": -110, **kwargs, **junction_kwargs})
+                ja = junction.plot(ax, **{"zorder": -110, **kwargs, **junction_kwargs})
+                artist_collection.junctions.append(ja)
         for additional in self.additionals:
-            additional.plot(ax, **{**kwargs, **additionals_kwargs})
+            addls_ac = additional.plot(ax, **{**kwargs, **additionals_kwargs})
+            artist_collection += addls_ac
+        return artist_collection
 
 
 if __name__ == "__main__":
