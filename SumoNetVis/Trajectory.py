@@ -8,8 +8,11 @@ from matplotlib.collections import LineCollection
 import numpy as np
 
 
+GENERIC_PARAM_MISSING_VALUE = None  # value to assign for timesteps when a generic parameter is missing
+
+
 class Trajectory:
-    def __init__(self, id, type, time=None, x=None, y=None, speed=None, angle=None, lane=None, colors=None):
+    def __init__(self, id, type, time=None, x=None, y=None, speed=None, angle=None, lane=None, colors=None, params=None):
         self.id = id
         self.type = type
         self.point_plot_kwargs = {"color": "blue", "ms": 5, "markeredgecolor": "black", "zorder": 200}
@@ -20,8 +23,9 @@ class Trajectory:
         self.angle = angle if angle is not None else []
         self.lane = lane if lane is not None else []
         self.colors = colors if colors is not None else []
+        self.params = params if params is not None else dict()
 
-    def _append_point(self, time, x, y, speed=None, angle=None, lane=None, color="#000000"):
+    def _append_point(self, time, x, y, speed=None, angle=None, lane=None, color="#000000", params=None):
         """
         Appends a point to the trajectory
 
@@ -32,6 +36,7 @@ class Trajectory:
         :type angle: float
         :type lane: str
         :type color: str
+        :type params: dict
         :return: None
         """
         self.time.append(time)
@@ -41,6 +46,14 @@ class Trajectory:
         self.angle.append(angle)
         self.lane.append(lane)
         self.colors.append(color)
+        params = params if params is not None else dict()
+        for key in params:
+            if key not in self.params:
+                self.params[key] = []
+        for key in self.params:
+            while len(self.params[key]) < len(self.time)-1:
+                self.params[key].append(GENERIC_PARAM_MISSING_VALUE)
+            self.params[key].append(params[key] if key in params else GENERIC_PARAM_MISSING_VALUE)
 
     def assign_colors_constant(self, color):
         """
@@ -119,12 +132,29 @@ class Trajectory:
         for i in range(len(self.x)):
             self.colors[i] = color_dict[self.lane[i]]
 
+    def assign_colors_param(self, key, transformation=None, *args, **kwargs):
+        """
+        Assigns colors based on values of the generic parameter with the given key. If given, the values are first
+        passed through the function given by "transformation". All args and kwargs are also passed on to this function.
+
+        :param key: generic parameter key
+        :param transformation: (optional) function which takes param values as input and returns a color
+        :return: None
+        :type key: str
+        """
+        if transformation is None:
+            transformation = lambda x: x
+        if not callable(transformation):
+            raise TypeError("Transformation must be callable.")
+        for i, val in enumerate(self.params[key]):
+            self.colors[i] = transformation(val)
+
     def _get_values_at_time(self, time):
         """
         Returns all of the values at the given simulation time
 
         :param time: Sumo simulation time for which to fetch values
-        :return: x, y, speed, angle, lane, colors
+        :return: dict containing x, y, speed, angle, lane, color, and generic parameter values at time
         """
         try:
             idx = self.time.index(time)
@@ -134,14 +164,16 @@ class Trajectory:
                     "speed": None,
                     "angle": None,
                     "lane": None,
-                    "color": None}
+                    "color": None,
+                    **{key: None for key in self.params}}
         else:
             return {"x": self.x[idx],
                     "y": self.y[idx],
                     "speed": self.speed[idx],
                     "angle": self.angle[idx],
                     "lane": self.lane[idx],
-                    "color": self.colors[idx]}
+                    "color": self.colors[idx],
+                    **{key: self.params[key][idx] for key in self.params}}
 
     def plot(self, ax=None, start_time=0, end_time=np.inf, zoom_to_extents=False, **kwargs):
         """
@@ -257,7 +289,8 @@ class Trajectories:
                     lane = veh.attrib["lane"]
                     speed = float(veh.attrib["speed"])
                     angle = float(veh.attrib["angle"])
-                    trajectories[vehID]._append_point(time, x, y, speed, angle, lane)
+                    params = {key: veh.attrib[key] for key in veh.attrib if key not in ["id", "type", "x", "y", "lane", "speed", "angle"]}
+                    trajectories[vehID]._append_point(time, x, y, speed, angle, lane, params=params)
         for vehID in trajectories:
             self._append(trajectories[vehID])
 
