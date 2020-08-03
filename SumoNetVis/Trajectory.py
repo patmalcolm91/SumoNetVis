@@ -188,7 +188,7 @@ class Trajectory:
         :type start_time: float
         :type end_time: float
         :type zoom_to_extents: bool
-        :return: None
+        :return: artist (LineCollection)
         """
         if ax is None:
             ax = plt.gca()
@@ -212,6 +212,7 @@ class Trajectory:
             dx, dy = x_max - x_min, y_max - y_min
             ax.set_xlim([x_min-0.05*dx, x_max+0.05*dx])
             ax.set_ylim([y_min-0.05*dy, y_max+0.05*dy])
+        return lc
 
 
 class Trajectories:
@@ -316,15 +317,18 @@ class Trajectories:
         :param start_time: time at which to start drawing
         :param end_time: time at which to stop drawing
         :param kwargs: keyword arguments to pass to plot function
-        :return: None
+        :return: list of artists (LineCollection objects)
         :type ax: plt.Axes
         :type start_time: float
         :type end_time: float
         """
+        artists = []
         if ax is None:
             ax = plt.gca()
         for trajectory in self:
-            trajectory.plot(ax, start_time, end_time, **kwargs)
+            artist = trajectory.plot(ax, start_time, end_time, **kwargs)
+            artists.append(artist)
+        return artists
 
     def plot_points(self, time, ax=None, animate_color=False):
         """
