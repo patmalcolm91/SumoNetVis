@@ -176,7 +176,7 @@ the SumoNetVis object that generated it. The artists can then be acted on as des
 animations or to make an interactive plot. An illustrative example of the latter is shown below. In the example,
 when a user clicks on a lane, that lane's id and speed properties are printed out.
 
-```pythonstub
+```python
 def onpick(event):
     sumo_object = event.artist.sumo_object
     print("Lane ", sumo_object.id, "clicked. Speed limit: ", sumo_object.speed)
