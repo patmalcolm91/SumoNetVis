@@ -144,20 +144,24 @@ class _Edge:
         :param ax: matplotlib Axes object
         :param lane_kwargs: kwargs to pass to the lane plotting function (matplotlib.patches.Polygon())
         :param lane_marking_kwargs: kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
-        :return: None
+        :return: list of lane artists, list of lane marking artists
         :type ax: plt.Axes
         """
+        lane_artists, lane_marking_artists = [], []
         if lane_kwargs is None:
             lane_kwargs = dict()
         if lane_marking_kwargs is None:
             lane_marking_kwargs = dict()
         for lane in self.lanes:
-            lane.plot_shape(ax, **{**kwargs, **lane_kwargs})
-            lane.plot_lane_markings(ax, **{**kwargs, **lane_marking_kwargs})
+            lane_artist = lane.plot_shape(ax, **{**kwargs, **lane_kwargs})
+            lane_marking_artist = lane.plot_lane_markings(ax, **{**kwargs, **lane_marking_kwargs})
+            lane_artists.append(lane_artist)
+            lane_marking_artists += lane_marking_artist
+        return lane_artists, lane_marking_artists
 
 
 class _LaneMarking:
-    def __init__(self, alignment, linewidth, color, dashes, purpose=None):
+    def __init__(self, alignment, linewidth, color, dashes, purpose=None, parent=None):
         """
         Initialize a lane marking object.
 
@@ -166,12 +170,14 @@ class _LaneMarking:
         :param color: the color of the marking
         :param dashes: dash pattern of the marking
         :param purpose: string describing what function the marking serves
+        :param parent: _Lane object which created the lane marking
         """
         self.purpose = "" if purpose is None else purpose
         self.alignment = alignment
         self.linewidth = linewidth
         self.color = color
         self.dashes = dashes
+        self.parent_lane = parent
 
     def plot(self, ax, **kwargs):
         """
@@ -179,13 +185,15 @@ class _LaneMarking:
 
         :param ax: matplotlib Axes object
         :param kwargs: kwargs to pass to Line2D
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         color = kwargs.pop("color") if "color" in kwargs else self.color
         x, y = zip(*self.alignment.coords)
         line = _Utils.LineDataUnits(x, y, linewidth=self.linewidth, color=color, dashes=self.dashes, **kwargs)
+        line.sumo_object = self
         ax.add_line(line)
+        return line
 
     def get_as_shape(self, cap_style=CAP_STYLE.flat):
         """
@@ -296,18 +304,19 @@ class _Lane:
         Plots the centerline alignment of the lane
 
         :param ax: matplotlib Axes object
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         x, y = zip(*self.alignment.coords)
-        ax.plot(x, y)
+        artist, = ax.plot(x, y)
+        return artist
 
     def plot_shape(self, ax, **kwargs):
         """
         Plots the entire shape of the lane
 
         :param ax: matplotlib Axes object
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         if "lw" not in kwargs and "linewidth" not in kwargs:
@@ -319,7 +328,9 @@ class _Lane:
         except NotImplementedError:
             warnings.warn("Can't plot non-polygonal geometry of lane " + self.id, stacklevel=2)
         else:
+            poly.sumo_object = self
             ax.add_patch(poly)
+            return poly
 
     def inverse_lane_index(self):
         """
@@ -437,7 +448,7 @@ class _Lane:
             return markings
         if self.parentEdge.function == "crossing":
             color, dashes = "w", (0.5, 0.5)
-            markings.append(_LaneMarking(self.alignment, self.width, color, dashes, purpose="crossing"))
+            markings.append(_LaneMarking(self.alignment, self.width, color, dashes, purpose="crossing", parent=self))
             return markings
         # US-style markings
         if LANE_MARKINGS_STYLE == USA_STYLE:
@@ -446,7 +457,7 @@ class _Lane:
             if self.inverse_lane_index() == 0:
                 leftEdge = self.alignment.parallel_offset(self.width/2-lw, side="left")
                 color, dashes = "y", (100, 0)
-                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center"))
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center", parent=self))
             # Draw non-centerline markings
             else:
                 adjacent_lane = self.parentEdge.get_lane(self.index+1)
@@ -459,12 +470,12 @@ class _Lane:
                         dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
                     else:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
-                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane"))
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane", parent=self))
             # draw outer lane marking if necessary
             if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width/2, side="right")
                 color, dashes = "w", (100, 0)
-                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer"))
+                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer", parent=self))
         # European-style markings
         elif LANE_MARKINGS_STYLE == EUR_STYLE:
             lw = 0.1 * STRIPE_WIDTH_SCALE_FACTOR
@@ -472,7 +483,7 @@ class _Lane:
             if self.inverse_lane_index() == 0:
                 leftEdge = self.alignment.parallel_offset(self.width/2, side="left")
                 color, dashes = "w", (100, 0)
-                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center"))
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center", parent=self))
             # Draw non-centerline markings
             else:
                 adjacent_lane = self.parentEdge.get_lane(self.index + 1)
@@ -485,12 +496,12 @@ class _Lane:
                         dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
                     else:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
-                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane"))
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane", parent=self))
             # draw outer lane marking if necessary
             if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width / 2, side="right")
                 color, dashes = "w", (100, 0)
-                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer"))
+                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer", parent=self))
         # Stop line markings (all styles)
         slw = 0.5
         if PLOT_STOP_LINES and self.allows not in ["pedestrian", "ship"] and self._requires_stop_line():
@@ -503,7 +514,7 @@ class _Lane:
                 end_left = end_cl.parallel_offset(self.width / 2, side="left")
                 end_right = end_cl.parallel_offset(self.width / 2, side="right")
                 stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
-                markings.append(_LaneMarking(stop_line, slw, "w", (100, 0), purpose="stopline"))
+                markings.append(_LaneMarking(stop_line, slw, "w", (100, 0), purpose="stopline", parent=self))
         return markings
 
     def plot_lane_markings(self, ax, **kwargs):
@@ -511,16 +522,20 @@ class _Lane:
         Guesses and plots some simple lane markings.
 
         :param ax: matplotlib Axes object
-        :return: None
+        :return: list of artists
         :type ax: plt.Axes
         """
+        artists = []
         for marking in self._guess_lane_markings():
             try:
-                marking.plot(ax, **kwargs)
+                artist = marking.plot(ax, **kwargs)
             except NotImplementedError:
                 warnings.warn("Can't plot center stripe for lane " + self.id, stacklevel=2)
             except ValueError:
                 warnings.warn("Generated lane marking geometry is empty for lane " + self.id, stacklevel=2)
+            else:
+                artists.append(artist)
+        return artists
 
 
 class _Connection:
@@ -603,12 +618,14 @@ class _Connection:
         """
         Plot the centerline of the connection.
         :param ax: matplotlib Axes object
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         if self.shape:
             x, y = zip(*self.shape.coords)
-            ax.plot(x, y)
+            line, = ax.plot(x, y)
+            line.sumo_object = self
+            return line
 
 
 class _Request:
@@ -724,7 +741,7 @@ class _Junction:
         Plots the Junction.
 
         :param ax: matplotlib Axes object
-        :return: None
+        :return: artist
         :type ax: plt.Axes
         """
         if self.shape is not None:
@@ -733,7 +750,9 @@ class _Junction:
             if "color" not in kwargs:
                 kwargs["color"] = COLOR_SCHEME["junction"]
             poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
+            poly.sumo_object = self
             ax.add_patch(poly)
+            return poly
 
 
 class Net:
@@ -997,7 +1016,7 @@ class Net:
         :param lane_marking_kwargs: kwargs to pass to the lane markings plotting function (matplotlib.lines.Line2D())
         :param junction_kwargs: kwargs to pass to the junction plotting function (matplotlib.patches.Polygon())
         :param additionals_kwargs: kwargs to pass to the additionals plotting function (Additionals.plot())
-        :return: None
+        :return: SumoNetVis.ArtistCollection object containing all generated artists
         :type ax: plt.Axes
         :type clip_to_limits: bool
         :type zoom_to_extents: bool
@@ -1036,14 +1055,20 @@ class Net:
         ymin, ymax = ax.get_ylim()
         bounds = [[xmin, ymax], [xmax, ymax], [xmax, ymin], [xmin, ymin]]
         window = Polygon(bounds)
+        artist_collection = _Utils.ArtistCollection()
         for edge in self.edges.values():
             if edge.function != "internal" and (not clip_to_limits or edge.intersects(window)):
-                edge.plot(ax, {"zorder": -100, **lane_kwargs}, {"zorder": -90, **lane_marking_kwargs}, **kwargs)
+                la, lma = edge.plot(ax, {"zorder": -100, **lane_kwargs}, {"zorder": -90, **lane_marking_kwargs}, **kwargs)
+                artist_collection.lanes += la
+                artist_collection.lane_markings += lma
         for junction in self.junctions.values():
             if not clip_to_limits or (junction.shape is not None and junction.shape.intersects(window)):
-                junction.plot(ax, **{"zorder": -110, **kwargs, **junction_kwargs})
+                ja = junction.plot(ax, **{"zorder": -110, **kwargs, **junction_kwargs})
+                artist_collection.junctions.append(ja)
         for additional in self.additionals:
-            additional.plot(ax, **{**kwargs, **additionals_kwargs})
+            addls_ac = additional.plot(ax, **{**kwargs, **additionals_kwargs})
+            artist_collection += addls_ac
+        return artist_collection
 
 
 if __name__ == "__main__":
