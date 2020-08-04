@@ -191,6 +191,7 @@ class _LaneMarking:
         color = kwargs.pop("color") if "color" in kwargs else self.color
         x, y = zip(*self.alignment.coords)
         line = _Utils.LineDataUnits(x, y, linewidth=self.linewidth, color=color, dashes=self.dashes, **kwargs)
+        line.sumo_object = self
         ax.add_line(line)
         return line
 
@@ -327,6 +328,7 @@ class _Lane:
         except NotImplementedError:
             warnings.warn("Can't plot non-polygonal geometry of lane " + self.id, stacklevel=2)
         else:
+            poly.sumo_object = self
             ax.add_patch(poly)
             return poly
 
@@ -622,6 +624,7 @@ class _Connection:
         if self.shape:
             x, y = zip(*self.shape.coords)
             line, = ax.plot(x, y)
+            line.sumo_object = self
             return line
 
 
@@ -747,6 +750,7 @@ class _Junction:
             if "color" not in kwargs:
                 kwargs["color"] = COLOR_SCHEME["junction"]
             poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
+            poly.sumo_object = self
             ax.add_patch(poly)
             return poly
 

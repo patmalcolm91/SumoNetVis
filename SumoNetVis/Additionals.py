@@ -103,11 +103,13 @@ class _Poly:
             if "lw" not in kwargs and "linewidth" not in kwargs:
                 kwargs["lw"] = 0
             poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
+            poly.sumo_object = self
             ax.add_patch(poly)
             return poly
         else:
             x, y = zip(*self.shape.coords)
             line = _Utils.LineDataUnits(x, y, linewidth=self.lineWidth, **kwargs)
+            line.sumo_object = self
             ax.add_line(line)
             return line
 
@@ -172,6 +174,7 @@ class _POI:
                   "zorder": self.layer-110 if self.layer <= 0 else self.layer-90, **kwargs}
         if self.x is not None and self.y is not None:
             circle = matplotlib.patches.Circle((self.x, self.y), **kwargs)
+            circle.sumo_object = self
             ax.add_patch(circle)
             return circle
 
@@ -297,6 +300,7 @@ class _BusStop:
             area_color = BUS_STOP_AREA_COLOR.get(BUS_STOP_STYLE, "#00000000")
             area_kwargs = {"color": area_color, **area_kwargs}
             poly = matplotlib.patches.Polygon(outline.boundary.coords, True, **area_kwargs)
+            poly.sumo_object = self
             ax.add_patch(poly)
             artists.append(poly)
         for marking in self._get_markings():
