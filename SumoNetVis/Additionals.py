@@ -251,7 +251,7 @@ class _BusStop:
                     zigzag_coords.append(tuple(zig_coords[i]))
             zigzag_coords.append(curb_align.coords[-1])
             zigzag_line = LineString(zigzag_coords)
-            markings.append(_Net._LaneMarking(zigzag_line, lw, "w", dashes, purpose="busstop", parent_lane=self))
+            markings.append(_Net._LaneMarking(zigzag_line, lw, "w", dashes, purpose="busstop", parent=self))
         elif BUS_STOP_STYLE == BUS_STOP_STYLE_UK:
             # generate UK-style inset dashed line box markings
             inset = 0.2
@@ -263,15 +263,15 @@ class _BusStop:
             end_edge = LineString([curb_align.coords[-1], inner_align.coords[0]])
             curb_align = ops.substring(curb_align, 2*light_lw, curb_align.length-2*light_lw).\
                 parallel_offset(heavy_lw/2, "right")
-            markings.append(_Net._LaneMarking(curb_align, heavy_lw, "y", curb_dashes, purpose="busstop", parent_lane=self))
-            markings.append(_Net._LaneMarking(start_edge, light_lw, "y", end_dashes, purpose="busstop", parent_lane=self))
-            markings.append(_Net._LaneMarking(end_edge, light_lw, "y", end_dashes, purpose="busstop", parent_lane=self))
-            markings.append(_Net._LaneMarking(inner_align, light_lw, "y", end_dashes, purpose="busstop", parent_lane=self))
+            markings.append(_Net._LaneMarking(curb_align, heavy_lw, "y", curb_dashes, purpose="busstop", parent=self))
+            markings.append(_Net._LaneMarking(start_edge, light_lw, "y", end_dashes, purpose="busstop", parent=self))
+            markings.append(_Net._LaneMarking(end_edge, light_lw, "y", end_dashes, purpose="busstop", parent=self))
+            markings.append(_Net._LaneMarking(inner_align, light_lw, "y", end_dashes, purpose="busstop", parent=self))
         elif BUS_STOP_STYLE == BUS_STOP_STYLE_USA:
             # return simple USA-style solid outline markings
             lw, dashes = 0.1, (100, 0)
             outline = lane_cl_seg.buffer(self.lane.width/2, cap_style=CAP_STYLE.flat).boundary
-            markings.append(_Net._LaneMarking(outline, lw, "w", dashes, purpose="busstop", parent_lane=self))
+            markings.append(_Net._LaneMarking(outline, lw, "w", dashes, purpose="busstop", parent=self))
         return markings
 
     def plot(self, ax, area_kwargs=None, marking_kwargs=None, **kwargs):
