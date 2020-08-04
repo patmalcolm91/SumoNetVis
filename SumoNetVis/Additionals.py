@@ -337,6 +337,15 @@ class _BusStop:
 
 
 class Additionals:
+    """
+    Stores objects from a Sumo additional XML file.
+
+    :param file: path to Sumo additional file
+    :param reference_net: network to use for objects which reference network elements (optional)
+    :type file: str
+    :type reference_net: SumoNetVis.Net
+    """
+
     def __init__(self, file, reference_net=None):
         """
         Reads objects from a Sumo additional XML file.
@@ -406,7 +415,7 @@ class Additionals:
         """
         Generates the contents for a Wavefront-OBJ file which represents the bus stops as a 3D model.
 
-        This text can be saved as text to a file with the *.obj extension and then imported into a 3D modelling program.
+        This text can be saved as text to a file with the ``*.obj`` extension and then imported into a 3D software.
         The axis configuration in the generated file is Y-Forward, Z-Up.
 
         Object-specific kwargs override general kwargs. Options are: "z", "extrude_height", and "include_bottom_face".
@@ -425,7 +434,7 @@ class Additionals:
         """
         Generates the contents for a Wavefront-OBJ file which represents the polygons as a 3D model.
 
-        This text can be saved as text to a file with the *.obj extension and then imported into a 3D modelling program.
+        This text can be saved as text to a file with the ``*.obj`` extension and then imported into a 3D software.
         The axis configuration in the generated file is Y-Forward, Z-Up.
 
         Possible kwargs are: "z", "extrude_height", and "include_bottom_face". Defaults are 0, 0, False.

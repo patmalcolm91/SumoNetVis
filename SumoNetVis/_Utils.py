@@ -392,6 +392,13 @@ class ArtistCollection:
 
         for artist in artist_collection:
             artist.do_something()
+
+    :ivar lanes: list of artists created by lanes
+    :ivar lane_markings: list of artists created by lane markings
+    :ivar junctions: list of artists created by junctions
+    :ivar polys: list of artists created by additionals polygons
+    :ivar pois: list of artists created by additionals POIs
+    :ivar bus_stops: list of artists created by bus stops
     """
     def __init__(self):
         self.lanes = NonelessList()

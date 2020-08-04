@@ -756,6 +756,18 @@ class _Junction:
 
 
 class Net:
+    """
+    :param file: path to Sumo network file
+    :param additional_files: optional path to additional file (or list of paths) to include with the network.
+    :type file: str
+    :type additional_files: Union[str, list[str]]
+
+    :ivar edges: dict with edge IDs as keys and _Edge objects as values
+    :ivar junctions: dict with junction IDs as keys and _Junction objects as values
+    :ivar connections: list of all _Connection objects
+    :ivar netOffset: (x, y) tuple of the netOffset parameter from the net file
+    :ivar projParameter: the projParameter from the net file
+    """
     def __init__(self, file, additional_files=None):
         """
         Initializes a Net object from a Sumo network file
@@ -870,6 +882,12 @@ class Net:
                             lane.requests.append(req)
 
     def load_additional_file(self, file):
+        """
+        Load the specified additional file and associate it with this Net.
+
+        :param file: path to additionals file
+        :return: None
+        """
         addl = _Addls(file, reference_net=self)
         self.additionals.append(addl)
 
@@ -933,7 +951,7 @@ class Net:
         """
         Generates the contents for a Wavefront-OBJ file which represents the network as a 3D model.
 
-        This text can be saved as text to a file with the *.obj extension and then imported into a 3D modelling program.
+        This text can be saved as text to a file with the ``*.obj`` extension and then imported into a 3D software.
         The axis configuration in the generated file is Y-Forward, Z-Up.
 
         Sumo "generic parameters" can be used to override the extrude height and material of lanes, junctions, and polys.

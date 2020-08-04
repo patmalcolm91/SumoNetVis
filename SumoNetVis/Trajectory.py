@@ -217,6 +217,14 @@ class Trajectory:
 
 
 class Trajectories:
+    """
+    Object storing a collection of trajectories.
+
+    Individual trajectories can be retrieved by indexing with a number or by vehID. The object is also iterable.
+
+    :param file: file from which to read trajectories. Currently only FCD exports supported.
+    :type file: str
+    """
     def __init__(self, file=None):
         """
         Initializes a Trajectories object.
