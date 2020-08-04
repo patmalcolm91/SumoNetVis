@@ -1,27 +1,51 @@
 SumoNetVis package
 ==================
 
-SumoNetVis.Net module
----------------------
+SumoNetVis Basic Features
+-------------------------
 
-.. automodule:: SumoNetVis.Net
+Net
+^^^
+
+.. autoclass:: SumoNetVis.Net
    :members:
    :undoc-members:
    :show-inheritance:
 
-SumoNetVis.Trajectory module
+Trajectories
+^^^^^^^^^^^^^^^
+
+.. autoclass:: SumoNetVis.Trajectories
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: SumoNetVis.Trajectory()
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Additionals
+^^^^^^^^^^^^
+
+.. autoclass:: SumoNetVis.Additionals
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Settings
+^^^^^^^^^
+
+.. autofunction:: SumoNetVis.set_style
+.. autofunction:: SumoNetVis.set_stripe_width_scale
+.. autofunction:: SumoNetVis.set_bus_stop_style
+
+SumoNetVis Advanced Features
 ----------------------------
 
-.. automodule:: SumoNetVis.Trajectory
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autoclass:: SumoNetVis._Utils.ArtistCollection
+    :members:
+    :undoc-members:
 
-SumoNetVis.Additionals module
------------------------------
-
-.. automodule:: SumoNetVis.Additionals
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
