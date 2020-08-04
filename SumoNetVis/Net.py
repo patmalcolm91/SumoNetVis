@@ -161,7 +161,7 @@ class _Edge:
 
 
 class _LaneMarking:
-    def __init__(self, alignment, linewidth, color, dashes, purpose=None):
+    def __init__(self, alignment, linewidth, color, dashes, purpose=None, parent_lane=None):
         """
         Initialize a lane marking object.
 
@@ -170,12 +170,14 @@ class _LaneMarking:
         :param color: the color of the marking
         :param dashes: dash pattern of the marking
         :param purpose: string describing what function the marking serves
+        :param parent_lane: _Lane object which created the lane marking
         """
         self.purpose = "" if purpose is None else purpose
         self.alignment = alignment
         self.linewidth = linewidth
         self.color = color
         self.dashes = dashes
+        self.parent_lane = parent_lane
 
     def plot(self, ax, **kwargs):
         """
@@ -444,7 +446,7 @@ class _Lane:
             return markings
         if self.parentEdge.function == "crossing":
             color, dashes = "w", (0.5, 0.5)
-            markings.append(_LaneMarking(self.alignment, self.width, color, dashes, purpose="crossing"))
+            markings.append(_LaneMarking(self.alignment, self.width, color, dashes, purpose="crossing", parent_lane=self))
             return markings
         # US-style markings
         if LANE_MARKINGS_STYLE == USA_STYLE:
@@ -453,7 +455,7 @@ class _Lane:
             if self.inverse_lane_index() == 0:
                 leftEdge = self.alignment.parallel_offset(self.width/2-lw, side="left")
                 color, dashes = "y", (100, 0)
-                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center"))
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center", parent_lane=self))
             # Draw non-centerline markings
             else:
                 adjacent_lane = self.parentEdge.get_lane(self.index+1)
@@ -466,12 +468,12 @@ class _Lane:
                         dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
                     else:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
-                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane"))
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane", parent_lane=self))
             # draw outer lane marking if necessary
             if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width/2, side="right")
                 color, dashes = "w", (100, 0)
-                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer"))
+                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer", parent_lane=self))
         # European-style markings
         elif LANE_MARKINGS_STYLE == EUR_STYLE:
             lw = 0.1 * STRIPE_WIDTH_SCALE_FACTOR
@@ -479,7 +481,7 @@ class _Lane:
             if self.inverse_lane_index() == 0:
                 leftEdge = self.alignment.parallel_offset(self.width/2, side="left")
                 color, dashes = "w", (100, 0)
-                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center"))
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="center", parent_lane=self))
             # Draw non-centerline markings
             else:
                 adjacent_lane = self.parentEdge.get_lane(self.index + 1)
@@ -492,12 +494,12 @@ class _Lane:
                         dashes = (1, 3)  # short dashed line where bikes may change lanes but passenger vehicles not
                     else:
                         dashes = (100, 0)  # solid line where neither passenger vehicles nor bikes may not change lanes
-                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane"))
+                markings.append(_LaneMarking(leftEdge, lw, color, dashes, purpose="lane", parent_lane=self))
             # draw outer lane marking if necessary
             if self.index == 0 and not (self.allows("pedestrian") and not self.allows("all")):
                 rightEdge = self.alignment.parallel_offset(self.width / 2, side="right")
                 color, dashes = "w", (100, 0)
-                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer"))
+                markings.append(_LaneMarking(rightEdge, lw, color, dashes, purpose="outer", parent_lane=self))
         # Stop line markings (all styles)
         slw = 0.5
         if PLOT_STOP_LINES and self.allows not in ["pedestrian", "ship"] and self._requires_stop_line():
@@ -510,7 +512,7 @@ class _Lane:
                 end_left = end_cl.parallel_offset(self.width / 2, side="left")
                 end_right = end_cl.parallel_offset(self.width / 2, side="right")
                 stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
-                markings.append(_LaneMarking(stop_line, slw, "w", (100, 0), purpose="stopline"))
+                markings.append(_LaneMarking(stop_line, slw, "w", (100, 0), purpose="stopline", parent_lane=self))
         return markings
 
     def plot_lane_markings(self, ax, **kwargs):
