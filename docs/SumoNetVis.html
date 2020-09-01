@@ -1,10 +1,11 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
-    <title>SumoNetVis package &#8212; SumoNetVis 1.5.0 documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SumoNetVis package &#8212; SumoNetVis 1.5.1 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -23,7 +24,8 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.5.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.5.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">SumoNetVis package</a></li> 
       </ul>
     </div>  
 
@@ -38,9 +40,9 @@
 <h2>SumoNetVis Basic Features<a class="headerlink" href="#sumonetvis-basic-features" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="net">
 <h3>Net<a class="headerlink" href="#net" title="Permalink to this headline">¶</a></h3>
-<dl class="class">
+<dl class="py class">
 <dt id="SumoNetVis.Net">
-<em class="property">class </em><code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">Net</code><span class="sig-paren">(</span><em class="sig-param">file</em>, <em class="sig-param">additional_files=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">Net</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span></em>, <em class="sig-param"><span class="n">additional_files</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -59,9 +61,9 @@
 </ul>
 </dd>
 </dl>
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Net.generate_obj_text">
-<code class="sig-name descname">generate_obj_text</code><span class="sig-paren">(</span><em class="sig-param">style=None</em>, <em class="sig-param">stripe_width_scale=1</em>, <em class="sig-param">terrain_distance=0</em>, <em class="sig-param">terrain_z=0</em>, <em class="sig-param">terrain_hi_q=False</em>, <em class="sig-param">material_mapping=None</em>, <em class="sig-param">material_param=None</em>, <em class="sig-param">extrude_height_param=None</em>, <em class="sig-param">extrude_height_param_transform=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.generate_obj_text" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">generate_obj_text</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">style</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">stripe_width_scale</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">terrain_distance</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">terrain_z</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">terrain_hi_q</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">material_mapping</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">material_param</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">extrude_height_param</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">extrude_height_param_transform</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.generate_obj_text" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates the contents for a Wavefront-OBJ file which represents the network as a 3D model.</p>
 <p>This text can be saved as text to a file with the <code class="docutils literal notranslate"><span class="pre">*.obj</span></code> extension and then imported into a 3D software.
 The axis configuration in the generated file is Y-Forward, Z-Up.</p>
@@ -86,9 +88,9 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Net.load_additional_file">
-<code class="sig-name descname">load_additional_file</code><span class="sig-paren">(</span><em class="sig-param">file</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.load_additional_file" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">load_additional_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.load_additional_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the specified additional file and associate it with this Net.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -100,9 +102,9 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Net.plot">
-<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">clip_to_limits=False</em>, <em class="sig-param">zoom_to_extents=True</em>, <em class="sig-param">style=None</em>, <em class="sig-param">stripe_width_scale=1</em>, <em class="sig-param">plot_stop_lines=None</em>, <em class="sig-param">apply_netOffset=False</em>, <em class="sig-param">lane_kwargs=None</em>, <em class="sig-param">lane_marking_kwargs=None</em>, <em class="sig-param">junction_kwargs=None</em>, <em class="sig-param">additionals_kwargs=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.plot" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clip_to_limits</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">zoom_to_extents</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">style</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">stripe_width_scale</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">plot_stop_lines</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">apply_netOffset</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">lane_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">lane_marking_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">junction_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">additionals_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Net.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the Net. Kwargs are passed to the plotting functions, with object-specific kwargs overriding general ones.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -131,9 +133,9 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 </div>
 <div class="section" id="trajectories">
 <h3>Trajectories<a class="headerlink" href="#trajectories" title="Permalink to this headline">¶</a></h3>
-<dl class="class">
+<dl class="py class">
 <dt id="SumoNetVis.Trajectories">
-<em class="property">class </em><code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">Trajectories</code><span class="sig-paren">(</span><em class="sig-param">file=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectories" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">Trajectories</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectories" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Object storing a collection of trajectories.</p>
 <p>Individual trajectories can be retrieved by indexing with a number or by vehID. The object is also iterable.</p>
@@ -142,9 +144,9 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 <dd class="field-odd"><p><strong>file</strong> (<em>str</em>) – file from which to read trajectories. Currently only FCD exports supported.</p>
 </dd>
 </dl>
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Trajectories.plot">
-<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">start_time=0</em>, <em class="sig-param">end_time=inf</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectories.plot" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">start_time</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">end_time</span><span class="o">=</span><span class="default_value">inf</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectories.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots all of the trajectories contained in this object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -161,9 +163,9 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Trajectories.plot_points">
-<code class="sig-name descname">plot_points</code><span class="sig-paren">(</span><em class="sig-param">time</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">animate_color=False</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectories.plot_points" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot_points</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">time</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">animate_color</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectories.plot_points" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the position of each vehicle at the specified time as a point.
 The style for each point is controlled by each Trajectory’s point_plot_kwargs attribute.</p>
 <dl class="field-list simple">
@@ -180,9 +182,9 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Trajectories.read_from_fcd">
-<code class="sig-name descname">read_from_fcd</code><span class="sig-paren">(</span><em class="sig-param">file</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectories.read_from_fcd" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">read_from_fcd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectories.read_from_fcd" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reads trajectories from Sumo floating car data (fcd) output file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -194,7 +196,7 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Trajectories.timestep_range">
 <code class="sig-name descname">timestep_range</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectories.timestep_range" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a numpy ndarray consisting of every simulation time</p>
@@ -207,13 +209,13 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="SumoNetVis.Trajectory">
 <em class="property">class </em><code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">Trajectory</code><a class="headerlink" href="#SumoNetVis.Trajectory" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Trajectory.assign_colors_angle">
-<code class="sig-name descname">assign_colors_angle</code><span class="sig-paren">(</span><em class="sig-param">cmap=None</em>, <em class="sig-param">angle_mode='deg'</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_angle" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">assign_colors_angle</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">angle_mode</span><span class="o">=</span><span class="default_value">'deg'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_angle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assigns colors to trajectory points based on the angle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -228,9 +230,9 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Trajectory.assign_colors_constant">
-<code class="sig-name descname">assign_colors_constant</code><span class="sig-paren">(</span><em class="sig-param">color</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_constant" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">assign_colors_constant</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">color</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_constant" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assigns a constant color to the trajectory</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -242,9 +244,9 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Trajectory.assign_colors_lane">
-<code class="sig-name descname">assign_colors_lane</code><span class="sig-paren">(</span><em class="sig-param">cmap=None</em>, <em class="sig-param">color_dict=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_lane" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">assign_colors_lane</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">color_dict</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_lane" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assigns colors to the trajectory points based on the lane value</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -259,9 +261,9 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Trajectory.assign_colors_param">
-<code class="sig-name descname">assign_colors_param</code><span class="sig-paren">(</span><em class="sig-param">key</em>, <em class="sig-param">transformation=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_param" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">assign_colors_param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">transformation</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_param" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assigns colors based on values of the generic parameter with the given key. If given, the values are first
 passed through the function given by “transformation”. All args and kwargs are also passed on to this function.</p>
 <dl class="field-list simple">
@@ -277,9 +279,9 @@ passed through the function given by “transformation”. All args and kwargs a
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Trajectory.assign_colors_speed">
-<code class="sig-name descname">assign_colors_speed</code><span class="sig-paren">(</span><em class="sig-param">cmap=None</em>, <em class="sig-param">min_speed=0</em>, <em class="sig-param">max_speed=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_speed" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">assign_colors_speed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">min_speed</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">max_speed</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_speed" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assigns colors to trajectory points based on the speed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -295,9 +297,9 @@ passed through the function given by “transformation”. All args and kwargs a
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Trajectory.plot">
-<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">start_time=0</em>, <em class="sig-param">end_time=inf</em>, <em class="sig-param">zoom_to_extents=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.plot" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">start_time</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">end_time</span><span class="o">=</span><span class="default_value">inf</span></em>, <em class="sig-param"><span class="n">zoom_to_extents</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the trajectory</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -320,9 +322,9 @@ passed through the function given by “transformation”. All args and kwargs a
 </div>
 <div class="section" id="additionals">
 <h3>Additionals<a class="headerlink" href="#additionals" title="Permalink to this headline">¶</a></h3>
-<dl class="class">
+<dl class="py class">
 <dt id="SumoNetVis.Additionals">
-<em class="property">class </em><code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">Additionals</code><span class="sig-paren">(</span><em class="sig-param">file</em>, <em class="sig-param">reference_net=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">Additionals</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span></em>, <em class="sig-param"><span class="n">reference_net</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Stores objects from a Sumo additional XML file.</p>
 <dl class="field-list simple">
@@ -333,9 +335,9 @@ passed through the function given by “transformation”. All args and kwargs a
 </ul>
 </dd>
 </dl>
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Additionals.generate_bus_stops_obj_text">
-<code class="sig-name descname">generate_bus_stops_obj_text</code><span class="sig-paren">(</span><em class="sig-param">area_kwargs=None</em>, <em class="sig-param">markings_kwargs=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.generate_bus_stops_obj_text" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">generate_bus_stops_obj_text</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">area_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">markings_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.generate_bus_stops_obj_text" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates the contents for a Wavefront-OBJ file which represents the bus stops as a 3D model.</p>
 <p>This text can be saved as text to a file with the <code class="docutils literal notranslate"><span class="pre">*.obj</span></code> extension and then imported into a 3D software.
 The axis configuration in the generated file is Y-Forward, Z-Up.</p>
@@ -350,18 +352,18 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Additionals.generate_polygons_obj_text">
-<code class="sig-name descname">generate_polygons_obj_text</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.generate_polygons_obj_text" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">generate_polygons_obj_text</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.generate_polygons_obj_text" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates the contents for a Wavefront-OBJ file which represents the polygons as a 3D model.</p>
 <p>This text can be saved as text to a file with the <code class="docutils literal notranslate"><span class="pre">*.obj</span></code> extension and then imported into a 3D software.
 The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 <p>Possible kwargs are: “z”, “extrude_height”, and “include_bottom_face”. Defaults are 0, 0, False.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Additionals.plot">
-<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">polygon_kwargs=None</em>, <em class="sig-param">poi_kwargs=None</em>, <em class="sig-param">bus_stop_area_kwargs=None</em>, <em class="sig-param">bus_stop_marking_kwargs=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.plot" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">polygon_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">poi_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bus_stop_area_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bus_stop_marking_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot all supported objects contained within the Additionals object.
 Kwargs are passed to the plotting functions, with object-specific kwargs overriding general ones.</p>
 <dl class="field-list simple">
@@ -380,9 +382,9 @@ Kwargs are passed to the plotting functions, with object-specific kwargs overrid
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Additionals.plot_bus_stops">
-<code class="sig-name descname">plot_bus_stops</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">area_kwargs=None</em>, <em class="sig-param">marking_kwargs=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.plot_bus_stops" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot_bus_stops</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">area_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">marking_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.plot_bus_stops" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots all bus stops.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -398,9 +400,9 @@ Kwargs are passed to the plotting functions, with object-specific kwargs overrid
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Additionals.plot_pois">
-<code class="sig-name descname">plot_pois</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.plot_pois" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot_pois</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.plot_pois" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot all POIs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -415,9 +417,9 @@ Kwargs are passed to the plotting functions, with object-specific kwargs overrid
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="SumoNetVis.Additionals.plot_polygons">
-<code class="sig-name descname">plot_polygons</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.plot_polygons" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot_polygons</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Additionals.plot_polygons" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot all polygons.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -437,9 +439,9 @@ Kwargs are passed to the plotting functions, with object-specific kwargs overrid
 </div>
 <div class="section" id="settings">
 <h3>Settings<a class="headerlink" href="#settings" title="Permalink to this headline">¶</a></h3>
-<dl class="function">
+<dl class="py function">
 <dt id="SumoNetVis.set_style">
-<code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">set_style</code><span class="sig-paren">(</span><em class="sig-param">style=None</em>, <em class="sig-param">plot_stop_lines=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.set_style" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">set_style</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">style</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">plot_stop_lines</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.set_style" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the lane marking style settings.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -454,9 +456,9 @@ Kwargs are passed to the plotting functions, with object-specific kwargs overrid
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="SumoNetVis.set_stripe_width_scale">
-<code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">set_stripe_width_scale</code><span class="sig-paren">(</span><em class="sig-param">factor=1</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.set_stripe_width_scale" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">set_stripe_width_scale</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">factor</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.set_stripe_width_scale" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the lane striping width scale factor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -468,9 +470,9 @@ Kwargs are passed to the plotting functions, with object-specific kwargs overrid
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="SumoNetVis.set_bus_stop_style">
-<code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">set_bus_stop_style</code><span class="sig-paren">(</span><em class="sig-param">style</em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.set_bus_stop_style" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">set_bus_stop_style</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">style</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.set_bus_stop_style" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the bus stop plotting style. Valid values are ‘SUMO’, ‘GER’, ‘UK’, and ‘USA’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -486,7 +488,7 @@ Kwargs are passed to the plotting functions, with object-specific kwargs overrid
 </div>
 <div class="section" id="sumonetvis-advanced-features">
 <h2>SumoNetVis Advanced Features<a class="headerlink" href="#sumonetvis-advanced-features" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="SumoNetVis._Utils.ArtistCollection">
 <em class="property">class </em><code class="sig-prename descclassname">SumoNetVis._Utils.</code><code class="sig-name descname">ArtistCollection</code><a class="headerlink" href="#SumoNetVis._Utils.ArtistCollection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Collection of Artist objects generated by various SumoNetVis plotting functions.</p>
@@ -516,6 +518,7 @@ The object can also be iterated and indexed just like a list. For example:</p>
 </div>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -563,12 +566,13 @@ The object can also be iterated and indexed just like a list. For example:</p>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.5.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.5.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">SumoNetVis package</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Patrick Malcolm.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
     </div>
   </body>
 </html>
