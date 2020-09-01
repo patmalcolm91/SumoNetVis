@@ -511,6 +511,9 @@ class _Lane:
                     break
                 pos = self.alignment.length - stop_line_location - slw/2
                 end_cl = ops.substring(self.alignment, pos-1, pos)
+                if not hasattr(end_cl, "parallel_offset"):
+                    warnings.warn("Unable to generate stop line for short lane " + self.id)
+                    continue
                 end_left = end_cl.parallel_offset(self.width / 2, side="left")
                 end_right = end_cl.parallel_offset(self.width / 2, side="right")
                 stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
