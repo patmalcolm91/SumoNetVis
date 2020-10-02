@@ -4,6 +4,8 @@ Tools for dealing with Lane- and Edge-based traffic measure output files.
 
 import xml.etree.ElementTree as ET
 import matplotlib.pyplot as plt
+import numpy as np
+import warnings
 
 MEASURE_TYPES = {
     "sampled_seconds": float,
@@ -93,8 +95,20 @@ class LaneBasedMeasures(_NetworkBasedMeasures):
 
 
 class MeanDataPlot:
-    def __init__(self, net, measures, color_by=None, linewidth_by=None, color_map=lambda x: x,
-                 linewidth_map=lambda x: x, lane_mode=False, **kwargs):
+    _DEFAULT_CMAPS_AND_RANGES = {
+        "speed": ("viridis", (0, 41.67)),  # viridis colormap with speed range 0-150 kph
+        "occupancdy": ("jet", (0, 100)),  # jet colormap with occupancy range 0-100 percent
+        "density": ("jet", (0, 200))  # jet colormap with density range 0-200 veh/km
+    }
+
+    _DEFAULT_LINEWIDTH_MAPS = {
+        "speed": lambda s: np.interp(s, (0, 41.67), (0, 8)),  # speed range 0-150 kph, lw range 0-8 px
+        "occupancy": lambda occ: np.interp(occ, (0, 100), (0, 8)),  # occupancy range 0-100 percent, lw range 0-8 px
+        "density": lambda k: np.interp(k, (0, 200), (0, 8)),  # density range 0-200 veh/km, lw range 0-8 px
+    }
+
+    def __init__(self, net, measures, color_by=None, linewidth_by=None, color_map=None, linewidth_map=None,
+                 color_by_range=None, linewidth_by_range=None, lane_mode=False, **kwargs):
         """
         Class for generating a plot using Edge- or Lane-based traffic measures. Supports animation blitting.
 
@@ -112,6 +126,32 @@ class MeanDataPlot:
         """
         self.net = net
         self.measures = measures
+        # Interpret the color_map parameter and use default settings for some typical use cases
+        if type(color_by_range) in [int, float]:
+            color_by_range = (0, color_by_range)
+        if color_by is not None and color_map is None and color_by_range is None:
+            _cmap, _crange = self._DEFAULT_CMAPS_AND_RANGES.get(color_by, ("jet", (0, 1)))
+            _crange = color_by_range if color_by_range is not None else _crange
+            color_map = lambda x: plt.get_cmap(_cmap)(np.interp(x, _crange, (0, 1)))
+        else:
+            _crange = color_by_range if color_by_range is not None else (0, 1)
+            if type(color_map) == str:
+                _cmap = plt.get_cmap(color_map)
+                color_map = lambda x: plt.get_cmap(_cmap)(np.interp(x, _crange, (0, 1)))
+            elif color_map is None:
+                color_map = lambda x: plt.get_cmap("jet")(np.interp(x, _crange, (0, 1)))
+            elif not callable(color_map):
+                raise TypeError("Invalid color_map specification.")
+            elif color_by_range is not None:
+                warnings.warn("Parameter color_by_range will be ignored, as a callable color_map was provided.")
+        # Interpret the linewidth_map parameter
+        if type(linewidth_by_range) in [int, float]:
+            linewidth_by_range = (0, linewidth_by_range)
+        if linewidth_map is None:
+            linewidth_map = self._DEFAULT_LINEWIDTH_MAPS.get(linewidth_by, lambda x: np.interp(x, linewidth_by_range, (0, 1)))
+        elif not callable(color_map):
+            raise TypeError("Invalid linewidth_map specification.")
+        # initialize remaining class members
         self.color_by = color_by
         self.linewidth_by = linewidth_by
         self.color_map = color_map
