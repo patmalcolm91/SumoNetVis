@@ -1080,6 +1080,24 @@ class Net:
 
     def plot_schematic(self, ax=None, preserve_shape=True, lane_mode=False, plot_crosswalks=False, zoom_to_extents=True,
                        extend_to_junction=True, kwargs_map=None, **kwargs):
+        """
+        Plot a schematic edge- or lane-based plot. Kwargs are passed to the respective plotting functions.
+
+        :param ax: matplotlib Axes object. Defaults to current axes.
+        :type ax: plt.Axes
+        :param preserve_shape: if False, edge will be represented as a straight line between to and from junctions.
+        :type preserve_shape: bool
+        :param lane_mode: if True, lanes will each be plotted individually.
+        :type lane_mode: bool
+        :param plot_crosswalks: if True, crosswalk edges will also be plotted.
+        :type plot_crosswalks: bool
+        :param zoom_to_extents: if True, window will be set to the network extents.
+        :type zoom_to_extents: bool
+        :param extend_to_junction: if True, additional points will be added to extend edges/lanes to junction centers.
+        :type extend_to_junction: bool
+        :param kwargs_map: dict mapping sumo object IDs to kwargs for plotting functions.
+        :type kwargs_map: dict
+        """
         if kwargs_map is None:
             kwargs_map = dict()
         for kws in [kwargs] + list(kwargs_map.values()):
