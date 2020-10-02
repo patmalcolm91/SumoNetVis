@@ -346,6 +346,42 @@ class LineDataUnits(Line2D):
     _dashSeq = property(_get_dashes, _set_dashes)
 
 
+class LineOffset(Line2D):
+    """
+    A Line2D object, but which has a visual offset applied.
+    """
+    def __init__(self, *args, offset=None, **kwargs):
+        """
+        A Line2D object, but which has a visual offset applied.
+
+        :param offset: offset (in pt) to the right. Defaults to 1/2 the linewidth.
+        """
+        super().__init__(*args, **kwargs)
+        if offset is None:
+            offset = self.get_linewidth() / 2
+        self._offset = offset
+        x, y = self.get_data(orig=True)
+        self._centerline = LineString(zip(list(x), list(y)))
+
+    def draw(self, renderer):
+        if self._offset != 0 and self.get_visible() is True:
+            # calculate offset in data units
+            ppd = 72. / self.axes.figure.dpi
+            trans = self.axes.transData.transform
+            dpu = (trans((1, 1)) - trans((0, 0)))[0]
+            offset = self._offset / dpu / ppd
+            # perform offset
+            try:
+                coords = self._centerline.parallel_offset(offset).coords
+            except NotImplementedError:
+                return
+            if len(coords) == 0:
+                return
+            # use offset coordinates
+            self.set_data(*zip(*coords))
+        super().draw(renderer)
+
+
 def convert_sumo_color(sumo_color):
     """
     Convert a Sumo-compatible color string to a matplotlib-compatible format.

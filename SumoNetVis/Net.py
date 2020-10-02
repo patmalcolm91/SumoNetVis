@@ -136,6 +136,36 @@ class _Edge:
         vClasses = _Utils.Allowance(allow_string=vc, disallow_string=exceptions)
         self.stop_offsets.append((value, vClasses))
 
+    @property
+    def alignment(self):
+        inner_lane = self.get_lane(self.lane_count()-1)  # type: _Lane
+        return inner_lane.alignment.parallel_offset(inner_lane.width/2, "left")
+
+    def plot_schematic(self, ax, preserve_shape=True, lane_mode=False, **kwargs):
+        """
+        Plots a schematic representation of the edge. Kwargs will be passed on to the respective plotting functions.
+
+        :param ax: matplotlib Axes object
+        :type ax: plt.Axes
+        :param preserve_shape: if False, edge will be represented as a straight line between to and from junctions.
+        :type preserve_shape: bool
+        :param lane_mode: if True, each lane will be plotted separately
+        :type lane_mode: bool
+        """
+        if lane_mode:
+            raise NotImplementedError("Schematic plotting of lanes not yet implemented.")
+        else:
+            if preserve_shape:
+                coords = self.alignment.coords
+            else:
+                if self.from_junction is None or self.to_junction is None:
+                    return []
+                coords = [(self.from_junction.x, self.from_junction.y), (self.to_junction.x, self.to_junction.y)]
+            artist = _Utils.LineOffset(*zip(*coords), linewidth=4, **kwargs)
+            artist.sumo_object = self
+            ax.add_artist(artist)
+            return [artist]
+
     def plot(self, ax, lane_kwargs=None, lane_marking_kwargs=None, **kwargs):
         """
         Plots the lane.
@@ -1021,6 +1051,19 @@ class Net:
             objects.append(_Utils.Object3D.from_shape_triangulated(terrain_shape, "terrain", "terrain", terrain_z,
                                                                    additional_opts=additional_opts))
         return _Utils.generate_obj_text_from_objects(objects, material_mapping=material_mapping)
+
+    def plot_schematic(self, ax=None, preserve_shape=True, lane_mode=False, **kwargs):
+        ax = ax if ax is not None else plt.gca()
+        artist_collection = _Utils.ArtistCollection()
+        for edge in self.edges.values():
+            if edge.function == "internal":
+                continue
+            edge_artists = edge.plot_schematic(ax, preserve_shape=preserve_shape, lane_mode=lane_mode, **kwargs)
+            if lane_mode:
+                artist_collection.lanes += edge_artists
+            else:
+                artist_collection.edges += edge_artists
+        return artist_collection
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
              plot_stop_lines=None, apply_netOffset=False, lane_kwargs=None, lane_marking_kwargs=None,
