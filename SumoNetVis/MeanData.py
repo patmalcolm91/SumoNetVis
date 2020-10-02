@@ -51,6 +51,10 @@ class EdgeBasedMeasures():
         for interval, interval_data in self.data.items():
             if interval[0] <= item < interval[1]:
                 return interval_data
+        raise IndexError("Time", item, "not contained in any interval.")
+
+    def __iter__(self):
+        return iter(sorted(self.data.keys()))
 
 
 if __name__ == "__main__":
