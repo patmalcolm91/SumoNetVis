@@ -1054,7 +1054,7 @@ class Net:
                                                                    additional_opts=additional_opts))
         return _Utils.generate_obj_text_from_objects(objects, material_mapping=material_mapping)
 
-    def plot_schematic(self, ax=None, preserve_shape=True, lane_mode=False, zoom_to_extents=True,
+    def plot_schematic(self, ax=None, preserve_shape=True, lane_mode=False, plot_crosswalks=False, zoom_to_extents=True,
                        kwargs_map=None, **kwargs):
         if kwargs_map is None:
             kwargs_map = dict()
@@ -1062,6 +1062,8 @@ class Net:
         artist_collection = _Utils.ArtistCollection()
         for edge in self.edges.values():
             if edge.function == "internal":
+                continue
+            if not plot_crosswalks and edge.function in ["walkingarea", "crossing"]:
                 continue
             _kw = {**kwargs, **kwargs_map.get(edge.id, {})}
             edge_artists = edge.plot_schematic(ax, preserve_shape=preserve_shape, lane_mode=lane_mode, **_kw)
