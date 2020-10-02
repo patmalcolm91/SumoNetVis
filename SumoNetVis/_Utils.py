@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib.lines import Line2D
 import matplotlib.colors
 from shapely.geometry import Polygon as shapelyPolygon
+from shapely.geometry import LineString
 try:
     from shapely.ops import polylabel
 except ImportError:
@@ -393,6 +394,7 @@ class ArtistCollection:
         for artist in artist_collection:
             artist.do_something()
 
+    :ivar edges: list of artists created by edges (only applicable in schematic mode)
     :ivar lanes: list of artists created by lanes
     :ivar lane_markings: list of artists created by lane markings
     :ivar junctions: list of artists created by junctions
@@ -401,6 +403,7 @@ class ArtistCollection:
     :ivar bus_stops: list of artists created by bus stops
     """
     def __init__(self):
+        self.edges = NonelessList()
         self.lanes = NonelessList()
         self.lane_markings = NonelessList()
         self.junctions = NonelessList()
@@ -409,7 +412,7 @@ class ArtistCollection:
         self.bus_stops = NonelessList()
 
     def _as_list(self):
-        return self.lanes + self.lane_markings + self.junctions + self.polys + self.pois + self.bus_stops
+        return self.edges + self.lanes + self.lane_markings + self.junctions + self.polys + self.pois + self.bus_stops
 
     def __iter__(self):
         return iter(self._as_list())
@@ -418,6 +421,7 @@ class ArtistCollection:
         return self._as_list()[item]
 
     def __iadd__(self, other):
+        self.edges += other.edges
         self.lanes += other.lanes
         self.lane_markings += other.lane_markings
         self.junctions += other.junctions
