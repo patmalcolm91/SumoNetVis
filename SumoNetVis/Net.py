@@ -163,7 +163,7 @@ class _Edge:
                 coords = [(self.from_junction.x, self.from_junction.y), (self.to_junction.x, self.to_junction.y)]
             if "solid_capstyle" not in kwargs:
                 kwargs["solid_capstyle"] = "butt"
-            artist = _Utils.LineOffset(*zip(*coords), linewidth=4, **kwargs)
+            artist = _Utils.LineOffset(*zip(*coords), **kwargs)
             artist.sumo_object = self
             ax.add_line(artist)
             return [artist]
