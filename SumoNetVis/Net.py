@@ -1054,13 +1054,16 @@ class Net:
                                                                    additional_opts=additional_opts))
         return _Utils.generate_obj_text_from_objects(objects, material_mapping=material_mapping)
 
-    def plot_schematic(self, ax=None, preserve_shape=True, lane_mode=False, **kwargs):
+    def plot_schematic(self, ax=None, preserve_shape=True, lane_mode=False, kwargs_map=None, **kwargs):
+        if kwargs_map is None:
+            kwargs_map = dict()
         ax = ax if ax is not None else plt.gca()
         artist_collection = _Utils.ArtistCollection()
         for edge in self.edges.values():
             if edge.function == "internal":
                 continue
-            edge_artists = edge.plot_schematic(ax, preserve_shape=preserve_shape, lane_mode=lane_mode, **kwargs)
+            _kw = {**kwargs, **kwargs_map.get(edge.id, {})}
+            edge_artists = edge.plot_schematic(ax, preserve_shape=preserve_shape, lane_mode=lane_mode, **_kw)
             if lane_mode:
                 artist_collection.lanes += edge_artists
             else:
