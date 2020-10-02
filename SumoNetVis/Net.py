@@ -141,7 +141,8 @@ class _Edge:
         inner_lane = self.get_lane(self.lane_count()-1)  # type: _Lane
         return inner_lane.alignment.parallel_offset(inner_lane.width/2, "left")
 
-    def plot_schematic(self, ax, preserve_shape=True, lane_mode=False, extend_to_junction=True, **kwargs):
+    def plot_schematic(self, ax, preserve_shape=True, lane_mode=False, extend_to_junction=True, lane_kwargs_map=None,
+                       **kwargs):
         """
         Plots a schematic representation of the edge. Kwargs will be passed on to the respective plotting functions.
 
@@ -153,21 +154,39 @@ class _Edge:
         :type lane_mode: bool
         :param extend_to_junction: if True, edges will be drawn all the way to the junction center, leaving no gaps.
         :type extend_to_junction: bool
+        :param lane_kwargs_map: dict like {lane_id: kwargs} of lane-specific kwargs
+        :type lane_kwargs_map: dict
         """
-        if lane_mode:
-            raise NotImplementedError("Schematic plotting of lanes not yet implemented.")
+        if preserve_shape:
+            coords = self.alignment.coords
+            if extend_to_junction and self.from_junction is not None and self.to_junction is not None:
+                coords = [(self.from_junction.x, self.from_junction.y)] + list(coords) + \
+                         [(self.to_junction.x, self.to_junction.y)]
         else:
-            if preserve_shape:
-                coords = self.alignment.coords
-                if extend_to_junction and self.from_junction is not None and self.to_junction is not None:
-                    coords = [(self.from_junction.x, self.from_junction.y)] + list(coords) +\
-                             [(self.to_junction.x, self.to_junction.y)]
-            else:
-                if self.from_junction is None or self.to_junction is None:
-                    return []
-                coords = [(self.from_junction.x, self.from_junction.y), (self.to_junction.x, self.to_junction.y)]
-            if "solid_capstyle" not in kwargs:
-                kwargs["solid_capstyle"] = "butt"
+            if self.from_junction is None or self.to_junction is None:
+                return []
+            coords = [(self.from_junction.x, self.from_junction.y), (self.to_junction.x, self.to_junction.y)]
+        if "solid_capstyle" not in kwargs:
+            kwargs["solid_capstyle"] = "butt"
+        # plot (lane mode)
+        if lane_mode:
+            if lane_kwargs_map is None:
+                lane_kwargs_map = dict()
+            artists = []
+            offset = 0
+            for lane in self.lanes:
+                lane_kwargs = lane_kwargs_map.get(lane.id, {})
+                _kw = {**kwargs, **lane_kwargs}
+                lw = _kw.get("linewidth", _kw.get("lw", 1))
+                _off = _kw.get("offset", offset + lw/2)
+                artist = _Utils.LineOffset(*zip(*coords), offset=_off, **_kw)
+                offset = _off + lw / 2
+                artist.sumo_object = lane
+                ax.add_line(artist)
+                artists.append(artist)
+            return artists
+        # plot (edge mode)
+        else:
             artist = _Utils.LineOffset(*zip(*coords), **kwargs)
             artist.sumo_object = self
             ax.add_line(artist)
@@ -1073,9 +1092,10 @@ class Net:
                 continue
             if not plot_crosswalks and edge.function in ["walkingarea", "crossing"]:
                 continue
+            _lane_kw = kwargs_map if lane_mode else {}
             _kw = {**kwargs, **kwargs_map.get(edge.id, {})}
             edge_artists = edge.plot_schematic(ax, preserve_shape=preserve_shape, lane_mode=lane_mode,
-                                               extend_to_junction=extend_to_junction, **_kw)
+                                               extend_to_junction=extend_to_junction, lane_kwargs_map=_lane_kw, **_kw)
             if lane_mode:
                 artist_collection.lanes += edge_artists
             else:
