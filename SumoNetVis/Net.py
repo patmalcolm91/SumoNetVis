@@ -1063,6 +1063,9 @@ class Net:
                        extend_to_junction=True, kwargs_map=None, **kwargs):
         if kwargs_map is None:
             kwargs_map = dict()
+        for kws in [kwargs] + list(kwargs_map.values()):
+            if "lw" in kws:
+                kws["linewidth"] = kws.pop("lw")
         ax = ax if ax is not None else plt.gca()
         artist_collection = _Utils.ArtistCollection()
         for edge in self.edges.values():
