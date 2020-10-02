@@ -141,7 +141,7 @@ class _Edge:
         inner_lane = self.get_lane(self.lane_count()-1)  # type: _Lane
         return inner_lane.alignment.parallel_offset(inner_lane.width/2, "left")
 
-    def plot_schematic(self, ax, preserve_shape=True, lane_mode=False, **kwargs):
+    def plot_schematic(self, ax, preserve_shape=True, lane_mode=False, extend_to_junction=True, **kwargs):
         """
         Plots a schematic representation of the edge. Kwargs will be passed on to the respective plotting functions.
 
@@ -151,12 +151,17 @@ class _Edge:
         :type preserve_shape: bool
         :param lane_mode: if True, each lane will be plotted separately
         :type lane_mode: bool
+        :param extend_to_junction: if True, edges will be drawn all the way to the junction center, leaving no gaps.
+        :type extend_to_junction: bool
         """
         if lane_mode:
             raise NotImplementedError("Schematic plotting of lanes not yet implemented.")
         else:
             if preserve_shape:
                 coords = self.alignment.coords
+                if extend_to_junction and self.from_junction is not None and self.to_junction is not None:
+                    coords = [(self.from_junction.x, self.from_junction.y)] + list(coords) +\
+                             [(self.to_junction.x, self.to_junction.y)]
             else:
                 if self.from_junction is None or self.to_junction is None:
                     return []
@@ -1055,7 +1060,7 @@ class Net:
         return _Utils.generate_obj_text_from_objects(objects, material_mapping=material_mapping)
 
     def plot_schematic(self, ax=None, preserve_shape=True, lane_mode=False, plot_crosswalks=False, zoom_to_extents=True,
-                       kwargs_map=None, **kwargs):
+                       extend_to_junction=True, kwargs_map=None, **kwargs):
         if kwargs_map is None:
             kwargs_map = dict()
         ax = ax if ax is not None else plt.gca()
@@ -1066,7 +1071,8 @@ class Net:
             if not plot_crosswalks and edge.function in ["walkingarea", "crossing"]:
                 continue
             _kw = {**kwargs, **kwargs_map.get(edge.id, {})}
-            edge_artists = edge.plot_schematic(ax, preserve_shape=preserve_shape, lane_mode=lane_mode, **_kw)
+            edge_artists = edge.plot_schematic(ax, preserve_shape=preserve_shape, lane_mode=lane_mode,
+                                               extend_to_junction=extend_to_junction, **_kw)
             if lane_mode:
                 artist_collection.lanes += edge_artists
             else:
