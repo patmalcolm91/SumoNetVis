@@ -165,7 +165,7 @@ class _Edge:
                 kwargs["solid_capstyle"] = "butt"
             artist = _Utils.LineOffset(*zip(*coords), linewidth=4, **kwargs)
             artist.sumo_object = self
-            ax.add_artist(artist)
+            ax.add_line(artist)
             return [artist]
 
     def plot(self, ax, lane_kwargs=None, lane_marking_kwargs=None, **kwargs):
@@ -1054,7 +1054,8 @@ class Net:
                                                                    additional_opts=additional_opts))
         return _Utils.generate_obj_text_from_objects(objects, material_mapping=material_mapping)
 
-    def plot_schematic(self, ax=None, preserve_shape=True, lane_mode=False, kwargs_map=None, **kwargs):
+    def plot_schematic(self, ax=None, preserve_shape=True, lane_mode=False, zoom_to_extents=True,
+                       kwargs_map=None, **kwargs):
         if kwargs_map is None:
             kwargs_map = dict()
         ax = ax if ax is not None else plt.gca()
@@ -1068,6 +1069,8 @@ class Net:
                 artist_collection.lanes += edge_artists
             else:
                 artist_collection.edges += edge_artists
+        if zoom_to_extents:
+            ax.autoscale_view()
         return artist_collection
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
