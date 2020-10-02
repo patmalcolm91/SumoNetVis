@@ -3,6 +3,7 @@ Tools for dealing with Lane- and Edge-based traffic measure output files.
 """
 
 import xml.etree.ElementTree as ET
+import matplotlib.pyplot as plt
 
 MEASURE_TYPES = {
     "sampled_seconds": float,
@@ -91,6 +92,70 @@ class LaneBasedMeasures(_NetworkBasedMeasures):
                     self.data[interval_tuple].update({lane.attrib["id"]: lane.attrib})
 
 
+class MeanDataPlot:
+    def __init__(self, net, measures, color_by=None, linewidth_by=None, color_map=lambda x: x,
+                 linewidth_map=lambda x: x, lane_mode=False, **kwargs):
+        """
+        Class for generating a plot using Edge- or Lane-based traffic measures. Supports animation blitting.
+
+        :param net: SumoNetVis Net object to use for plot
+        :type net: SumoNetVis.Net.Net
+        :param measures: object containing edge- or lane-based measures. Must be indexable like so: measures[time][sumo_id][attribute]
+        :type measures: _NetworkBasedMeasures
+        :param color_by: attribute in measures by which to assign color. If None, color will not be animated.
+        :type color_by: str
+        :param linewidth_by: attribute in measures by which to assign linewidth. If None, linewidth will not be animated.
+        :param color_map: callable color map of signature: color_map(attribute_value) -> color
+        :param linewidth_map: callable linewidth map of signature: linewidth_map(attribute_value) -> linewidth
+        :param lane_mode: If True, lanes will be plotted instead of edges.
+        :param kwargs: all kwargs will be passed to the plotting function net.plot_schematic()
+        """
+        self.net = net
+        self.measures = measures
+        self.color_by = color_by
+        self.linewidth_by = linewidth_by
+        self.color_map = color_map
+        self.linewidth_map = linewidth_map
+        self.lane_mode = lane_mode
+        self.kwargs = kwargs
+        self._artists = []
+
+    def plot(self, time, ax=None):
+        """
+        Plot (or update the plot of) the network, with properties based on the measures at the specified time.
+
+        :param time: time (or interval) for which to plot
+        :param ax: matplotlib Axes object
+        :type ax: plt.Axes
+        :return: list of matplotlib Artist objects
+        """
+        if ax is None:
+            ax = plt.gca()
+        data = self.measures[time]
+        if len(self._artists) == 0:
+            ac = self.net.plot_schematic(ax, **self.kwargs)
+            if self.lane_mode:
+                self._artists = ac.lanes
+            else:
+                self._artists = ac.edges
+        for artist in self._artists:
+            sumo_id = artist.sumo_object.id
+            if sumo_id not in data:
+                continue
+            if self.color_by is not None:
+                color = self.color_map(data[sumo_id][self.color_by])
+                artist.set_color(color)
+            if self.linewidth_by is not None:
+                lw = self.linewidth_map(data[sumo_id][self.linewidth_by])
+                artist.set_linewidth(lw)
+        return self._artists
+
+
 if __name__ == "__main__":
+    import SumoNetVis.Net as Net
+    from matplotlib.animation import FuncAnimation
+    net = Net("../Sample/test.net.xml")
     edgeMeasures = EdgeBasedMeasures("../Sample/edgeBasedTest.xml")
-    print(edgeMeasures[30])
+    mdp = MeanDataPlot(net, edgeMeasures, color_by="occupancy", color_map=plt.get_cmap("Reds"), linewidth=4)
+    a = FuncAnimation(plt.gcf(), mdp.plot, mdp.measures.intervals, blit=True, repeat=True)
+    plt.show()
