@@ -668,6 +668,8 @@ class _Junction:
         self.intLanes = []
         self._requests = []
         self.params = dict()
+        self.x = float(attrib["x"])
+        self.y = float(attrib["y"])
         self.shape = None
         if "shape" in attrib:
             coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
