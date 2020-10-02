@@ -44,7 +44,7 @@ class EdgeBasedMeasures():
                     if attr in MEASURE_TYPES:
                         edge.attrib[attr] = MEASURE_TYPES[attr](edge.attrib[attr])
                 if edge.attrib["id"] not in self.data[interval_tuple]:
-                    self.data[interval_tuple] = dict()
+                    self.data[interval_tuple][edge.attrib["id"]] = dict()
                 self.data[interval_tuple].update({edge.attrib["id"]: edge.attrib})
 
     def __getitem__(self, item):
