@@ -47,7 +47,13 @@ class EdgeBasedMeasures():
                     self.data[interval_tuple][edge.attrib["id"]] = dict()
                 self.data[interval_tuple].update({edge.attrib["id"]: edge.attrib})
 
+    @property
+    def intervals(self):
+        return sorted(self.data.keys())
+
     def __getitem__(self, item):
+        if type(item) == tuple and len(item) == 2 and item in self.data:
+            return self.data[item]
         for interval, interval_data in self.data.items():
             if interval[0] <= item < interval[1]:
                 return interval_data
