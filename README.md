@@ -139,6 +139,27 @@ For example:
 
 See the Sumo documentation on generic parameters as well as the full SumoNetVis documentation for more information.
 
+### Schematic Plots
+Networks can also be plotted schematically, with each edge or lane being represented as a simple line, rather than
+with its full geometry and lane markings. The method ```Net.plot_schematic()``` can be used for this purpose. For
+detailed information on usage, see the documentation.
+
+#### Edge- and Lane-Based Aggregate Measures
+Edge- and Lane-based aggregate measures output files (including emissions and noise output files) can be read with the
+````EdgeBasedMeasures()```` and ```LaneBasedMeasures()``` classes, respectively. Additionally, a pandas DataFrame
+containing edge- or lane-based measures can be ingested with the ```NetworkMeasuresDataFrame()``` class. Then, this data
+can be used to control the color and/or linewidth of edges/lanes in a schematic plot using the ```MeanDataPlot()```
+class, as shown in the following example:
+
+```python
+edge_measures = SumoNetVis.EdgeBasedMeasures("path/to/file.xml")
+mdp = SumoNetvis.MeanDataPlot(net, edge_measures, color_by="occupancy", color_map="Reds", color_by_range=100)
+a = animation.FuncAnimation(fig, mdp.plot, mdp.measures.intervals, blit=True, repeat=False)
+plt.show()
+```
+
+For details on this functionality, see the documentation
+
 ### OBJ Export
 
 The Wavefront-OBJ format is a text-based file format. The ```Net.generate_obj_text()``` method generates the contents
