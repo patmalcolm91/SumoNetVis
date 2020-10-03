@@ -256,7 +256,7 @@ class MeanDataPlot:
             if sumo_id not in data:
                 continue
             if self.color_by is not None:
-                color = self.color_map(data[sumo_id][self.color_by])
+                color = self.color_map(data[sumo_id].get(self.color_by, 0))
                 artist.set_color(color)
             if self.linewidth_by is not None:
                 lw = self.linewidth_map(data[sumo_id][self.linewidth_by])
