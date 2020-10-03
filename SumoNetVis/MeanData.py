@@ -97,7 +97,7 @@ class LaneBasedMeasures(_NetworkBasedMeasures):
 class MeanDataPlot:
     _DEFAULT_CMAPS_AND_RANGES = {
         "speed": ("viridis", (0, 41.67)),  # viridis colormap with speed range 0-150 kph
-        "occupancdy": ("jet", (0, 100)),  # jet colormap with occupancy range 0-100 percent
+        "occupancy": ("jet", (0, 100)),  # jet colormap with occupancy range 0-100 percent
         "density": ("jet", (0, 200))  # jet colormap with density range 0-200 veh/km
     }
 
