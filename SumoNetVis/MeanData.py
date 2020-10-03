@@ -116,7 +116,7 @@ class MeanDataPlot:
     }
 
     def __init__(self, net, measures, color_by=None, linewidth_by=None, color_map=None, linewidth_map=None,
-                 color_by_range=None, linewidth_by_range=None, lane_mode=False, **kwargs):
+                 color_by_range=None, lane_mode=False, **kwargs):
         """
         Class for generating a plot using Edge- or Lane-based traffic measures. Supports animation blitting.
 
@@ -126,6 +126,12 @@ class MeanDataPlot:
         a matplotlib cmap, in which case value will be mapped from the range color_by_range to (0, 1) and then passed
         to the corresponding cmap.
 
+        Linewidth mapping works as follows: ``lw = linewidth_map(value)``, where ``value = measures[time][sumo_id][color_by]``.
+        If not given, ``linewidth_map`` will be assigned a default mapping for some common ``linewidth_by`` values.
+        ``linewidth_map`` can be specified either as a callable function with the signature ``linewidth_map(value) -> lw``,
+        or as a tuple (x_range, lw_range), in which case the value will be mapped from x_range to lw_range. These ranges
+        may each be specified either as a (min, max) tuple, or as a max value, which is interpreted as the range (0, max).
+
         :param net: SumoNetVis Net object to use for plot
         :type net: SumoNetVis.Net.Net
         :param measures: object containing edge- or lane-based measures. Must be indexable like so: measures[time][sumo_id][attribute]
@@ -134,9 +140,8 @@ class MeanDataPlot:
         :type color_by: str
         :param linewidth_by: attribute in measures by which to assign linewidth. If None, linewidth will not be animated.
         :param color_map: callable color map of signature: color_map(attribute_value) -> color
-        :param linewidth_map: callable linewidth map of signature: linewidth_map(attribute_value) -> linewidth
+        :param linewidth_map: callable linewidth map or tuple (x_range, lw_range) where each range is either (min, max) or max.
         :param color_by_range: range from which to scale color values, or the max value of the range.
-        :param linewidth_by_range: range from which to scale linewidth values, or the max value of the range.
         :param lane_mode: If True, lanes will be plotted instead of edges.
         :type lane_mode: bool
         :param kwargs: all kwargs will be passed to the plotting function net.plot_schematic()
@@ -162,12 +167,21 @@ class MeanDataPlot:
             elif color_by_range is not None:
                 warnings.warn("Parameter color_by_range will be ignored, as a callable color_map was provided.")
         # Interpret the linewidth_map parameter
-        if type(linewidth_by_range) in [int, float]:
-            linewidth_by_range = (0, linewidth_by_range)
-        if linewidth_map is None:
-            linewidth_map = self._DEFAULT_LINEWIDTH_MAPS.get(linewidth_by, lambda x: np.interp(x, linewidth_by_range, (0, 1)))
-        elif not callable(color_map):
-            raise TypeError("Invalid linewidth_map specification.")
+        if linewidth_by is not None:
+            if linewidth_map is None and linewidth_by in self._DEFAULT_LINEWIDTH_MAPS:
+                linewidth_map = self._DEFAULT_LINEWIDTH_MAPS[linewidth_by]
+            else:
+                linewidth_map = linewidth_map if linewidth_map is not None else ((0, 1), (0, 1))
+                if type(linewidth_map) == tuple and len(linewidth_map) == 2:
+                    xr, fr = linewidth_map
+                    xr = (0, xr) if type(xr) in [int, float] else xr
+                    fr = (0, fr) if type(fr) in [int, float] else fr
+                    if type(xr) == tuple and len(xr) == 2 and type(fr) == tuple and len(fr) == 2:
+                        linewidth_map = lambda x: np.interp(x, xr, fr)
+                    else:
+                        raise TypeError("Invalid linewidth_map specification.")
+                elif not callable(linewidth_map):
+                    raise TypeError("Invalid linewidth_map specification.")
         # initialize remaining class members
         self.color_by = color_by
         self.linewidth_by = linewidth_by
