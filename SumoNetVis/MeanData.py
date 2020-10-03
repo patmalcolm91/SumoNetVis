@@ -19,7 +19,15 @@ MEASURE_TYPES = {
     "entered": int,
     "left": int,
     "laneChangedFrom": int,
-    "laneChangedTo": int
+    "laneChangedTo": int,
+    "vaporized": int,
+    "CO_abs": float, "CO2_abs": float, "HC_abs": float, "PMx_abs": float, "NOx_abs": float,
+    "fuel_abs": float, "electricity_abs": float,
+    "CO_normed": float, "CO2_normed": float, "HC_normed": float, "PMx_normed": float, "NOx_normed": float,
+    "fuel_normed": float, "electricity_normed": float,
+    "CO_perVeh": float, "CO2_perVeh": float, "HC_perVeh": float, "PMx_perVeh": float, "NOx_perVeh": float,
+    "fuel_perVeh": float, "electricity_perVeh": float,
+    "noise": float
 }
 
 
