@@ -120,10 +120,13 @@ class MeanDataPlot:
         """
         Class for generating a plot using Edge- or Lane-based traffic measures. Supports animation blitting.
 
-        Coloring works as follows: color = color_map(value), where value = measures[time][sumo_id][attribute].
-        color_map and color_by_range will be assigned defaults for some common color_by values.
-        color_map can be specified either as a callable (in which case color_by_range is ignored), or the name of
-        a matplotlib cmap, in which case value will be mapped from the range color_by_range to (0, 1) and then passed
+        The parameter ``measures`` may be either an EdgeBasedMeasures or LaneBasedMeasures object, or any object
+        that is indexable like so: ``measures[time][sumo_id][attribute]``.
+
+        Coloring works as follows: ``color = color_map(value)``, where ``value = measures[time][sumo_id][color_by]``.
+        ``color_map`` and ``color_by_range`` will be assigned defaults for some common ``color_by`` values if neither is given.
+        ``color_map`` can be specified either as a callable (in which case ``color_by_range`` is ignored), or as the name of
+        a matplotlib cmap, in which case value will be mapped from the range ``color_by_range`` to (0, 1) and then passed
         to the corresponding cmap.
 
         Linewidth mapping works as follows: ``lw = linewidth_map(value)``, where ``value = measures[time][sumo_id][color_by]``.
@@ -134,7 +137,7 @@ class MeanDataPlot:
 
         :param net: SumoNetVis Net object to use for plot
         :type net: SumoNetVis.Net.Net
-        :param measures: object containing edge- or lane-based measures. Must be indexable like so: measures[time][sumo_id][attribute]
+        :param measures: object containing edge- or lane-based measures.
         :type measures: _NetworkBasedMeasures
         :param color_by: attribute in measures by which to assign color. If None, color will not be animated.
         :type color_by: str
