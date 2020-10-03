@@ -33,6 +33,12 @@ MEASURE_TYPES = {
 
 class _NetworkBasedMeasures:
     def __init__(self, files=None):
+        """
+        Class for loading aggregate measures output files. Indexable either by interval (as tuple) or time (in which
+        case the first entry with an interval containing the given time is returned).
+
+        :param files: path or list of paths to file(s) to be loaded.
+        """
         self.data = dict()  # dict like {interval: data} where data is a dict like {edge_id: attributes_dict}
         if type(files) == str:
             self.load_file(files)
