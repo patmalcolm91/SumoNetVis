@@ -108,6 +108,39 @@ class LaneBasedMeasures(_NetworkBasedMeasures):
                     self.data[interval_tuple].update({lane.attrib["id"]: lane.attrib})
 
 
+class NetworkMeasuresDataFrame(_NetworkBasedMeasures):
+    def __init__(self, df, begin="begin", end="end", sumo_id="id"):
+        """
+        Class for loading a pandas DataFrame containing Edge- or Lane-based aggregate measures.
+        Assumes the DataFrame is in a "long" format, i.e. one row for every interval/edge combination.
+
+        :param df: DataFrame to convert
+        :type df: pandas.DataFrame
+        :param begin: name of column in df containing the beginning of the interval
+        :type begin: str
+        :param end: name of column in df containing the end of the interval
+        :type end: str
+        :param sumo_id: name of column in df containing the sumo (edge or lane) id
+        :type sumo_id: str
+        """
+        self.df = df
+        self.df["__interval__"] = list(zip(df[begin], df[end]))
+        _grouped = df.groupby("__interval__")
+        self.data = {}
+        self._intervals = []
+        for g in _grouped:
+            interval, data = g
+            self.intervals.append(interval)
+            self.data[interval] = data.set_index(sumo_id).T
+
+    @property
+    def intervals(self):
+        return self._intervals
+
+    def load_file(self, file):
+        raise NotImplementedError("File loading not available for", type(self))
+
+
 class MeanDataPlot:
     _DEFAULT_CMAPS_AND_RANGES = {
         "speed": ("viridis", (0, 41.67)),  # viridis colormap with speed range 0-150 kph
