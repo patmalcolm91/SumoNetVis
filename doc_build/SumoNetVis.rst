@@ -41,6 +41,25 @@ Settings
 .. autofunction:: SumoNetVis.set_stripe_width_scale
 .. autofunction:: SumoNetVis.set_bus_stop_style
 
+Edge- and Lane-Based Measures
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: SumoNetVis.MeanDataPlot
+   :members:
+   :undoc-members:
+.. autoclass:: SumoNetVis.EdgeBasedMeasures
+   :members:
+   :undoc-members:
+   :show-inheritance:
+.. autoclass:: SumoNetVis.LaneBasedMeasures
+   :members:
+   :undoc-members:
+   :show-inheritance:
+.. autoclass:: SumoNetVis.NetworkMeasuresDataFrame
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 SumoNetVis Advanced Features
 ----------------------------
 
