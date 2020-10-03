@@ -13,6 +13,10 @@ A Python library for visualizing a Sumo network and trajectories with matplotlib
 
 ![Example animation](Example_Animation.gif)
 
+**Edge- and Lane-Based Measures Animation**
+
+![Example edge-based speed animation](Example_Edge_Based_Animation.gif)
+
 Basic trajectory plotting from FCD outputs is built in, but it is also possible to plot custom data and graphics on
 top of the network with the full flexibility and power of matplotlib and other compatible libraries, such as seaborn.
 
