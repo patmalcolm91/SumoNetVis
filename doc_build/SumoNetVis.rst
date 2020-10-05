@@ -45,18 +45,25 @@ Edge- and Lane-Based Measures
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: SumoNetVis.MeanDataPlot
+   :special-members: __init__
    :members:
    :undoc-members:
 .. autoclass:: SumoNetVis.EdgeBasedMeasures
+   :special-members: __init__
    :members:
+   :inherited-members:
    :undoc-members:
    :show-inheritance:
 .. autoclass:: SumoNetVis.LaneBasedMeasures
+   :special-members: __init__
    :members:
+   :inherited-members:
    :undoc-members:
    :show-inheritance:
 .. autoclass:: SumoNetVis.NetworkMeasuresDataFrame
+   :special-members: __init__
    :members:
+   :inherited-members:
    :undoc-members:
    :show-inheritance:
 

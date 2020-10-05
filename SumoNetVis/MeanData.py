@@ -51,6 +51,7 @@ class _NetworkBasedMeasures:
 
     @property
     def intervals(self):
+        """sorted list of intervals contained in the data"""
         return sorted(self.data.keys())
 
     def __getitem__(self, item):
@@ -135,6 +136,7 @@ class NetworkMeasuresDataFrame(_NetworkBasedMeasures):
 
     @property
     def intervals(self):
+        """sorted list of intervals contained in the data"""
         return self._intervals
 
     def load_file(self, file):
