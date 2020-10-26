@@ -518,7 +518,7 @@ class _Lane:
                 end_right = end_cl.parallel_offset(self.width / 2, side="right")
                 try:
                     stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
-                except NotImplementedError:
+                except (NotImplementedError, IndexError):
                     warnings.warn("Can't generate stopline geometry for lane " + self.id)
                 else:
                     markings.append(_LaneMarking(stop_line, slw, "w", (100, 0), purpose="stopline", parent=self))
