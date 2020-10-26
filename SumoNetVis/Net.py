@@ -511,17 +511,20 @@ class _Lane:
                     break
                 pos = self.alignment.length - stop_line_location - slw/2
                 end_cl = ops.substring(self.alignment, pos-1, pos)
+                if pos < 1:
+                    warnings.warn("Unable to generate stop line for short lane " + self.id)
+                    continue
                 if not hasattr(end_cl, "parallel_offset"):
                     warnings.warn("Unable to generate stop line for short lane " + self.id)
                     continue
                 if end_cl.is_empty or not end_cl.is_valid:
                     warnings.warn("Can't generate stopline geometry for lane " + self.id)
                     continue
-                end_left = end_cl.parallel_offset(self.width / 2, side="left")
-                end_right = end_cl.parallel_offset(self.width / 2, side="right")
                 try:
+                    end_left = end_cl.parallel_offset(self.width / 2, side="left")
+                    end_right = end_cl.parallel_offset(self.width / 2, side="right")
                     stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
-                except (NotImplementedError, IndexError):
+                except (NotImplementedError, IndexError, ValueError):
                     warnings.warn("Can't generate stopline geometry for lane " + self.id)
                 else:
                     markings.append(_LaneMarking(stop_line, slw, "w", (100, 0), purpose="stopline", parent=self))
