@@ -514,6 +514,9 @@ class _Lane:
                 if not hasattr(end_cl, "parallel_offset"):
                     warnings.warn("Unable to generate stop line for short lane " + self.id)
                     continue
+                if end_cl.is_empty or not end_cl.is_valid:
+                    warnings.warn("Can't generate stopline geometry for lane " + self.id)
+                    continue
                 end_left = end_cl.parallel_offset(self.width / 2, side="left")
                 end_right = end_cl.parallel_offset(self.width / 2, side="right")
                 try:
