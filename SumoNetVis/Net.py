@@ -516,11 +516,12 @@ class _Lane:
                     continue
                 end_left = end_cl.parallel_offset(self.width / 2, side="left")
                 end_right = end_cl.parallel_offset(self.width / 2, side="right")
-                if not hasattr(end_left, "coords") or not hasattr(end_right, "coords"):
+                try:
+                    stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
+                except NotImplementedError:
                     warnings.warn("Can't generate stopline geometry for lane " + self.id)
-                    continue
-                stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
-                markings.append(_LaneMarking(stop_line, slw, "w", (100, 0), purpose="stopline", parent=self))
+                else:
+                    markings.append(_LaneMarking(stop_line, slw, "w", (100, 0), purpose="stopline", parent=self))
         return markings
 
     def plot_lane_markings(self, ax, **kwargs):
