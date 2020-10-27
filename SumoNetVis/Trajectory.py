@@ -5,7 +5,9 @@ Tools for plotting trajectories.
 import xml.etree.ElementTree as ET
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+from matplotlib.colors import Normalize
 import numpy as np
+import warnings
 
 
 GENERIC_PARAM_MISSING_VALUE = None  # value to assign for timesteps when a generic parameter is missing
@@ -24,6 +26,11 @@ class Trajectory:
         self.lane = lane if lane is not None else []
         self.colors = colors if colors is not None else []
         self.params = params if params is not None else dict()
+        self._mappable = None  # type: plt.cm.ScalarMappable
+
+    @property
+    def mappable(self):
+        return self._mappable
 
     def _append_point(self, time, x, y, speed=None, angle=None, lane=None, color="#000000", params=None):
         """
@@ -79,16 +86,13 @@ class Trajectory:
             cmap = plt.cm.get_cmap("viridis")
         elif type(cmap) == str:
             cmap = plt.cm.get_cmap(cmap)
-        cmapList = cmap.colors
         if min_speed is None:
             min_speed = min(self.speed)
         if max_speed is None:
             max_speed = max(self.speed)
+        self._mappable = plt.cm.ScalarMappable(cmap=cmap, norm=Normalize(vmin=min_speed, vmax=max_speed))
         for i in range(len(self.x)):
-            index = len(cmapList) * (self.speed[i] - min_speed) / (max_speed - min_speed)
-            index = int(round(max(0, min(index, len(cmapList)-1))))
-            color = cmapList[index]
-            self.colors[i] = color
+            self.colors[i] = self._mappable.to_rgba(self.speed[i])
 
     def assign_colors_angle(self, cmap=None, angle_mode="deg"):
         """
@@ -105,10 +109,9 @@ class Trajectory:
             cmap = plt.cm.get_cmap(cmap)
         max_angles = {"deg": 360, "rad": 2*np.pi, "grad": 400}
         max_angle = max_angles[angle_mode]
+        self._mappable = plt.cm.ScalarMappable(cmap=cmap, norm=Normalize(vmin=0, vmax=max_angle))
         for i in range(len(self.x)):
-            angle = self.angle[i] % max_angle
-            color = cmap(angle/max_angle)
-            self.colors[i] = color
+            self.colors[i] = self._mappable.to_rgba(self.angle[i])
 
     def assign_colors_lane(self, cmap=None, color_dict=None):
         """
@@ -132,22 +135,40 @@ class Trajectory:
         for i in range(len(self.x)):
             self.colors[i] = color_dict[self.lane[i]]
 
-    def assign_colors_param(self, key, transformation=None, *args, **kwargs):
+    def assign_colors_param(self, key, transformation=None, cmap=None, vmin=None, vmax=None):
         """
-        Assigns colors based on values of the generic parameter with the given key. If given, the values are first
-        passed through the function given by "transformation". All args and kwargs are also passed on to this function.
+        Assigns colors based on values of the generic parameter with the given key. Colors can be assigned in one of
+        two ways:
+
+        * Provide a cmap. ``transformation`` will be interpreted as a matplotlib norm (default Normalize(vmin, vmax)).
+        * Provide a transformation and no cmap, where ``transformation`` has signature transformation(param) -> color.
+
+        In the first case, the trajectory mappable will be generated, allowing automatic colorbar creation.
+        If neither a transformation nor a cmap is given, the parameter value will be interpreted as a color.
 
         :param key: generic parameter key
-        :param transformation: (optional) function which takes param values as input and returns a color
+        :param transformation: (optional) callable if no cmap provided or matplotlib norm if cmap provided
+        :param cmap: (optional): cmap to use to assign colors
+        :param vmin: minimum value for norm (used to scale values onto cmap)
+        :param vmax: maximum value for norm (used to scale values onto cmap)
         :return: None
         :type key: str
         """
-        if transformation is None:
+        if cmap is not None:
+            vmin = vmin if vmin is not None else 0
+            vmax = vmax if vmax is not None else 1
+            norm = transformation if transformation is not None else Normalize(vmin=vmin, vmax=vmax)
+            self._mappable = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+            transformation = self._mappable.to_rgba
+        elif transformation is None:
             transformation = lambda x: x
+            if vmin is not None or vmax is not None:
+                warnings.warn("Parameters vmin and vmax ignored because no cmap was specified.")
         if not callable(transformation):
             raise TypeError("Transformation must be callable.")
         for i, val in enumerate(self.params[key]):
-            self.colors[i] = transformation(val)
+            _val = val if cmap is None else float(val)
+            self.colors[i] = transformation(_val)
 
     def _get_values_at_time(self, time):
         """
@@ -224,6 +245,8 @@ class Trajectories:
 
     :param file: file from which to read trajectories. Currently only FCD exports supported.
     :type file: str
+
+    :ivar mappables: dict of ``vehID: ScalarMappable`` pairs. Useful for generating colorbars.
     """
     def __init__(self, file=None):
         """
@@ -317,6 +340,10 @@ class Trajectories:
                             trajectories[objID]._append_point(time, x, y, speed, angle, lane, params=params)
         for vehID in trajectories:
             self._append(trajectories[vehID])
+
+    @property
+    def mappables(self):
+        return {traj.id: traj.mappable for traj in self.trajectories if traj.mappable is not None}
 
     def plot(self, ax=None, start_time=0, end_time=np.inf, **kwargs):
         """

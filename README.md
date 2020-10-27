@@ -78,6 +78,18 @@ SumoNetVis.COLOR_SCHEME["bicycle"] = "#006600"
 Any color specification supported by matplotlib can be given here, such as RGB and RGBA hex strings and float tuples, as
 well as color names and abbreviations. See the matplotlib documentation for more detailed information.
 
+### Trajectory Colorization
+When using the various "assign_colors" functions, when applicable, a corresponding matplotlib ```ScalarMappable``` will
+be stored in the ```Trajectory.mappable``` property. The ```Trajectories``` class also contains a property,
+```mappables```, which contains a dict of ```vehID: ScalarMappable``` pairs. Therefore, to automatically generate a
+colorbar, one of the two following (equivalent) methods can be used:
+
+```python
+plt.colorbar(trajectories["vehicle_id"].mappable)
+# OR
+plt.colorbar(trajectories.mappables["vehicle_id"])
+```
+
 ### Animation
 Instead of visualizing Trajectories as lines, an animation can be generated using the ```matplotlib.animation``` module.
 
