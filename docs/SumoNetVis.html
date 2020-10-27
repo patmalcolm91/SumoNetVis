@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SumoNetVis package &#8212; SumoNetVis 1.5.2 documentation</title>
+    <title>SumoNetVis package &#8212; SumoNetVis 1.6.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -24,7 +24,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.5.2 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.6.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">SumoNetVis package</a></li> 
       </ul>
     </div>  
@@ -143,7 +143,17 @@ The axis configuration in the generated file is Y-Forward, Z-Up.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>file</strong> (<em>str</em>) – file from which to read trajectories. Currently only FCD exports supported.</p>
 </dd>
+<dt class="field-even">Variables</dt>
+<dd class="field-even"><p><a class="reference internal" href="#SumoNetVis.Trajectories.mappables" title="SumoNetVis.Trajectories.mappables"><strong>mappables</strong></a> – dict of <code class="docutils literal notranslate"><span class="pre">vehID:</span> <span class="pre">ScalarMappable</span></code> pairs. Useful for generating colorbars.</p>
+</dd>
 </dl>
+<dl class="py method">
+<dt id="SumoNetVis.Trajectories.mappables">
+<em class="property">property </em><code class="sig-name descname">mappables</code><a class="headerlink" href="#SumoNetVis.Trajectories.mappables" title="Permalink to this definition">¶</a></dt>
+<dd><p>dict of <code class="docutils literal notranslate"><span class="pre">vehID:</span> <span class="pre">ScalarMappable</span></code> pairs. Useful for generating colorbars, like so:
+<code class="docutils literal notranslate"><span class="pre">plt.colorbar(trajectories.mappables[vehID])</span></code></p>
+</dd></dl>
+
 <dl class="py method">
 <dt id="SumoNetVis.Trajectories.plot">
 <code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">start_time</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">end_time</span><span class="o">=</span><span class="default_value">inf</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectories.plot" title="Permalink to this definition">¶</a></dt>
@@ -213,6 +223,12 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 <dt id="SumoNetVis.Trajectory">
 <em class="property">class </em><code class="sig-prename descclassname">SumoNetVis.</code><code class="sig-name descname">Trajectory</code><a class="headerlink" href="#SumoNetVis.Trajectory" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class containing a single trajectory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#SumoNetVis.Trajectory.mappable" title="SumoNetVis.Trajectory.mappable"><strong>mappable</strong></a> – <code class="docutils literal notranslate"><span class="pre">ScalarMappable</span></code> object. Useful for generating colorbars. None if no applicable colorization.</p>
+</dd>
+</dl>
 <dl class="py method">
 <dt id="SumoNetVis.Trajectory.assign_colors_angle">
 <code class="sig-name descname">assign_colors_angle</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">angle_mode</span><span class="o">=</span><span class="default_value">'deg'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_angle" title="Permalink to this definition">¶</a></dt>
@@ -263,14 +279,23 @@ The style for each point is controlled by each Trajectory’s point_plot_kwargs 
 
 <dl class="py method">
 <dt id="SumoNetVis.Trajectory.assign_colors_param">
-<code class="sig-name descname">assign_colors_param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">transformation</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_param" title="Permalink to this definition">¶</a></dt>
-<dd><p>Assigns colors based on values of the generic parameter with the given key. If given, the values are first
-passed through the function given by “transformation”. All args and kwargs are also passed on to this function.</p>
+<code class="sig-name descname">assign_colors_param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">transformation</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">vmin</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">vmax</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#SumoNetVis.Trajectory.assign_colors_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assigns colors based on values of the generic parameter with the given key. Colors can be assigned in one of
+two ways:</p>
+<ul class="simple">
+<li><p>Provide a cmap. <code class="docutils literal notranslate"><span class="pre">transformation</span></code> will be interpreted as a matplotlib norm (default Normalize(vmin, vmax)).</p></li>
+<li><p>Provide a transformation and no cmap, where <code class="docutils literal notranslate"><span class="pre">transformation</span></code> has signature transformation(param) -&gt; color.</p></li>
+</ul>
+<p>In the first case, the trajectory mappable will be generated, allowing automatic colorbar creation.
+If neither a transformation nor a cmap is given, the parameter value will be interpreted as a color.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>key</strong> (<em>str</em>) – generic parameter key</p></li>
-<li><p><strong>transformation</strong> – (optional) function which takes param values as input and returns a color</p></li>
+<li><p><strong>transformation</strong> – (optional) callable if no cmap provided or matplotlib norm if cmap provided</p></li>
+<li><p><strong>cmap</strong> – (optional): cmap to use to assign colors</p></li>
+<li><p><strong>vmin</strong> – minimum value for norm (used to scale values onto cmap)</p></li>
+<li><p><strong>vmax</strong> – maximum value for norm (used to scale values onto cmap)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -295,6 +320,13 @@ passed through the function given by “transformation”. All args and kwargs a
 <dd class="field-even"><p>None</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="SumoNetVis.Trajectory.mappable">
+<em class="property">property </em><code class="sig-name descname">mappable</code><a class="headerlink" href="#SumoNetVis.Trajectory.mappable" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">ScalarMappable</span></code> object corresponding to colorization of trajectory. Useful for generating colorbars, like so:
+<code class="docutils literal notranslate"><span class="pre">plt.colorbar(trajectory.mappable)</span></code></p>
 </dd></dl>
 
 <dl class="py method">
@@ -566,7 +598,7 @@ The object can also be iterated and indexed just like a list. For example:</p>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.5.2 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SumoNetVis 1.6.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">SumoNetVis package</a></li> 
       </ul>
     </div>
