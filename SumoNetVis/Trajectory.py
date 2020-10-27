@@ -14,6 +14,11 @@ GENERIC_PARAM_MISSING_VALUE = None  # value to assign for timesteps when a gener
 
 
 class Trajectory:
+    """
+    Class containing a single trajectory.
+
+    :ivar mappable: ``ScalarMappable`` object. Useful for generating colorbars. None if no applicable colorization.
+    """
     def __init__(self, id, type, time=None, x=None, y=None, speed=None, angle=None, lane=None, colors=None, params=None):
         self.id = id
         self.type = type
@@ -30,6 +35,10 @@ class Trajectory:
 
     @property
     def mappable(self):
+        """
+        ``ScalarMappable`` object corresponding to colorization of trajectory. Useful for generating colorbars, like so:
+        ``plt.colorbar(trajectory.mappable)``
+        """
         return self._mappable
 
     def _append_point(self, time, x, y, speed=None, angle=None, lane=None, color="#000000", params=None):
@@ -343,6 +352,10 @@ class Trajectories:
 
     @property
     def mappables(self):
+        """
+        dict of ``vehID: ScalarMappable`` pairs. Useful for generating colorbars, like so:
+        ``plt.colorbar(trajectories.mappables[vehID])``
+        """
         return {traj.id: traj.mappable for traj in self.trajectories if traj.mappable is not None}
 
     def plot(self, ax=None, start_time=0, end_time=np.inf, **kwargs):
