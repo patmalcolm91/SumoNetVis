@@ -259,6 +259,9 @@ class _Lane:
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
         if self.shape.geometryType() != "Polygon":
             self.shape = self.shape.buffer(0)
+            if self.shape.geometryType() == "MultiPolygon":
+                warnings.warn("Shape of lane " + self.id + " is MultiPolygon. Ignoring all but largest polygon.")
+                self.shape = sorted(self.shape, key=lambda x: x.area)[-1]
         self.parentEdge = None
         self.stop_offsets = []
         self.incoming_connections = []
@@ -405,7 +408,7 @@ class _Lane:
             z = z_lane+0.002 if marking.purpose == "crossing" else z_lane+0.001
             try:
                 obj = marking.get_as_3d_object(z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
-            except NotImplementedError:
+            except (NotImplementedError, AttributeError):
                 warnings.warn("Could not generate geometry for " + marking.purpose + " marking of lane " + self.id, stacklevel=2)
             else:
                 objects.append(obj)
