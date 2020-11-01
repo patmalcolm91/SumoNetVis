@@ -254,7 +254,7 @@ class _Lane:
         self.width = float(attrib["width"]) if "width" in attrib else DEFAULT_LANE_WIDTH
         self.endOffset = attrib["endOffset"] if "endOffset" in attrib else 0
         self.acceleration = attrib["acceleration"] if "acceleration" in attrib else "False"
-        coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
+        coords = [[float(coord) for coord in xy.split(",")[0:2]] for xy in attrib["shape"].split(" ")]
         self.alignment = LineString(coords)
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
         if self.shape.geometryType() != "Polygon":
@@ -576,7 +576,7 @@ class _Connection:
         self.state = attrib["state"]
 
         if "shape" in attrib:
-            coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
+            coords = [[float(coord) for coord in xy.split(",")[0:2]] for xy in attrib["shape"].split(" ")]
             self.shape = LineString(coords)
         else:
             self.shape = None
@@ -683,7 +683,7 @@ class _Junction:
         self.params = dict()
         self.shape = None
         if "shape" in attrib:
-            coords = [[float(coord) for coord in xy.split(",")] for xy in attrib["shape"].split(" ")]
+            coords = [[float(coord) for coord in xy.split(",")[0:2]] for xy in attrib["shape"].split(" ")]
             if len(coords) > 2:
                 self.shape = Polygon(coords)
 
