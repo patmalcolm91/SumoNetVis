@@ -630,7 +630,7 @@ class _Connection:
         material = "pedestrian_connection" if self.from_lane.lane_type() == "pedestrian" and self.to_lane.lane_type() == "pedestrian" else "connection"
         return _Utils.Object3D.from_shape(orient(shape), "cxn_via_" + self.via_id, material, z=z, extrude_height=h, include_bottom_face=include_bottom_face)
 
-    def plot_alignment(self, ax):
+    def plot_alignment(self, ax, **kwargs):
         """
         Plot the centerline of the connection.
         :param ax: matplotlib Axes object
@@ -639,7 +639,7 @@ class _Connection:
         """
         if self.shape:
             x, y = zip(*self.shape.coords)
-            line, = ax.plot(x, y)
+            line, = ax.plot(x, y, **kwargs)
             line.sumo_object = self
             return line
 
