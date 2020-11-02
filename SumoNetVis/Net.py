@@ -574,6 +574,8 @@ class _Connection:
         self.via_lane = None
         self.dir = attrib["dir"]
         self.state = attrib["state"]
+        self.tl = attrib["tl"] if "tl" in attrib else None
+        self.linkIndex = attrib["linkIndex"] if "linkIndex" in attrib else None
 
         if "shape" in attrib:
             coords = [[float(coord) for coord in xy.split(",")[0:2]] for xy in attrib["shape"].split(" ")]
@@ -771,6 +773,28 @@ class _Junction:
             return poly
 
 
+class _TLPhase:
+    def __init__(self, attrib):
+        self.duration = int(attrib["duration"])
+        self.state = attrib["state"]
+        self.minDur = int(attrib["minDur"]) if "minDur" in attrib else None
+        self.maxDur = int(attrib["maxDur"]) if "maxDur" in attrib else None
+        self.name = attrib["name"] if "name" in attrib else None
+        self.next = [int(x) for x in attrib["next"].split(" ")] if "next" in attrib else None
+
+
+class _TLLogic:
+    def __init__(self, attrib):
+        self.id = attrib["id"]
+        self.type = attrib["type"]
+        self.programID = attrib["programID"]
+        self.offset = int(attrib["offset"])
+        self.phases = []  # type: list[_TLPhase]
+
+    def add_phase(self, phase):
+        self.phases.append(phase)
+
+
 class Net:
     """
     :param file: path to Sumo network file
@@ -796,6 +820,7 @@ class Net:
         self.additionals = []
         self.edges = dict()
         self.junctions = dict()
+        self.tlLogics = dict()
         self.connections = []
         self.netOffset = (0, 0)
         self.projParameter = "!"
@@ -836,6 +861,13 @@ class Net:
             elif obj.tag == "connection":
                 connection = _Connection(obj.attrib)
                 self.connections.append(connection)
+            elif obj.tag == "tlLogic":
+                tlLogic = _TLLogic(obj.attrib)
+                for tl_child in obj:
+                    if tl_child.tag == "phase":
+                        phase = _TLPhase(tl_child.attrib)
+                        tlLogic.add_phase(phase)
+                self.tlLogics[tlLogic.id] = tlLogic
         self._link_objects()
         if additional_files is not None:
             if type(additional_files) == str:
