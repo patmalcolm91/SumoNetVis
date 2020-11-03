@@ -173,15 +173,17 @@ def triangulate_polygon_constrained(shape, additional_opts=""):
         raise NotImplementedError("Can't do constrained triangulation on geometry type " + shape.geometryType())
 
 
-def generate_obj_text_from_objects(objects, material_mapping=None):
+def generate_obj_text_from_objects(objects, material_mapping=None, offset=(0, 0, 0)):
     """
     Generate Wavefront OBJ text from a list of Object3D objects
 
     :param objects: list of Object3D objects
     :param material_mapping: a dictionary mapping SumoNetVis-generated material names to user-defined ones
+    :param offset: constant amount by which to translate all objects
     :return: Wavefront OBJ text
     :type objects: list[Object3D]
     :type material_mapping: dict
+    :type offset: tuple[float]
     """
     if material_mapping is None:
         material_mapping = dict()
@@ -190,7 +192,7 @@ def generate_obj_text_from_objects(objects, material_mapping=None):
     for object in objects:
         content += "o " + object.name
         content += "\nusemtl " + material_mapping.get(object.material, object.material)
-        content += "\nv " + "\nv ".join([" ".join([str(c) for c in vertex]) for vertex in object.vertices])
+        content += "\nv " + "\nv ".join([" ".join([str(c+offset) for c, offset in zip(vertex, offset)]) for vertex in object.vertices])
         if len(object.faces) > 0:
             content += "\nf " + "\nf ".join([" ".join([str(v + vertex_count) for v in face]) for face in object.faces])
         if len(object.lines) > 0:

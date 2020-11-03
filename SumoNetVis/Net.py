@@ -995,7 +995,7 @@ class Net:
 
     def generate_obj_text(self, style=None, stripe_width_scale=1, terrain_distance=0, terrain_z=0, terrain_hi_q=False,
                           material_mapping=None, material_param=None, extrude_height_param=None,
-                          extrude_height_param_transform=None):
+                          extrude_height_param_transform=None, apply_netOffset=False):
         """
         Generates the contents for a Wavefront-OBJ file which represents the network as a 3D model.
 
@@ -1013,6 +1013,7 @@ class Net:
         :param material_param: generic parameter to use to override material, if present. material_mapping is applied also to this value.
         :param extrude_height_param: generic parameter to use to override extrude height, if present
         :param extrude_height_param_transform: function to apply to extrude_height_param values. Defaults to str->float conversion.
+        :param apply_netOffset: if True, network will be shifted by the inverse of the netOffset
         :return: None
         :type style: str
         :type stripe_width_scale: float
@@ -1022,6 +1023,7 @@ class Net:
         :type material_mapping: dict
         :type material_param: str
         :type extrude_height_param: str
+        :type apply_netOffset: bool
         """
         if style is not None:
             set_style(style)
@@ -1063,7 +1065,8 @@ class Net:
             additional_opts = "q" if terrain_hi_q else ""
             objects.append(_Utils.Object3D.from_shape_triangulated(terrain_shape, "terrain", "terrain", terrain_z,
                                                                    additional_opts=additional_opts))
-        return _Utils.generate_obj_text_from_objects(objects, material_mapping=material_mapping)
+        offset = (0, 0, 0) if apply_netOffset is False else (-self.netOffset[0], -self.netOffset[1], 0)
+        return _Utils.generate_obj_text_from_objects(objects, material_mapping=material_mapping, offset=offset)
 
     def plot(self, ax=None, clip_to_limits=False, zoom_to_extents=True, style=None, stripe_width_scale=1,
              plot_stop_lines=None, apply_netOffset=False, lane_kwargs=None, lane_marking_kwargs=None,
