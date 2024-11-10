@@ -226,12 +226,12 @@ class _LaneMarking:
         :type include_bottom_face: bool
         """
         shape = self.get_as_shape()
-        if shape.geometryType() == "Polygon":
+        if shape.geom_type == "Polygon":
             oriented_shape = MultiPolygon([orient(shape)])
-        elif shape.geometryType() in ["MultiPolygon", "GeometryCollection"]:
+        elif shape.geom_type in ["MultiPolygon", "GeometryCollection"]:
             oriented_geoms = []
             for geom in shape:
-                if geom.geometryType() == "Polygon":
+                if geom.geom_type == "Polygon":
                     oriented_geoms.append(orient(geom))
             oriented_shape = MultiPolygon(oriented_geoms)
         return _Utils.Object3D.from_shape(oriented_shape, self.purpose+"_marking", self.color+"_marking", z=z, extrude_height=extrude_height, include_bottom_face=include_bottom_face)
@@ -257,9 +257,9 @@ class _Lane:
         coords = [[float(coord) for coord in xy.split(",")[0:2]] for xy in attrib["shape"].split(" ")]
         self.alignment = LineString(coords)
         self.shape = self.alignment.buffer(self.width/2, cap_style=CAP_STYLE.flat)
-        if self.shape.geometryType() != "Polygon":
+        if self.shape.geom_type != "Polygon":
             self.shape = self.shape.buffer(0)
-            if self.shape.geometryType() == "MultiPolygon":
+            if self.shape.geom_type == "MultiPolygon":
                 warnings.warn("Shape of lane " + self.id + " is MultiPolygon. Ignoring all but largest polygon.")
                 self.shape = sorted(self.shape, key=lambda x: x.area)[-1]
         self.parentEdge = None
@@ -327,7 +327,7 @@ class _Lane:
         if "color" not in kwargs:
             kwargs["color"] = self.lane_color()
         try:
-            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
+            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, closed=True, **kwargs)
         except NotImplementedError:
             warnings.warn("Can't plot non-polygonal geometry of lane " + self.id, stacklevel=2)
         else:
@@ -767,7 +767,7 @@ class _Junction:
                 kwargs["lw"] = 0
             if "color" not in kwargs:
                 kwargs["color"] = COLOR_SCHEME["junction"]
-            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
+            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, closed=True, **kwargs)
             poly.sumo_object = self
             ax.add_patch(poly)
             return poly

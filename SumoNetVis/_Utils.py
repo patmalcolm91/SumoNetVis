@@ -64,19 +64,19 @@ class Object3D:
         """
         vertices, faces, lines = [], [], []
         # get coordinate sequences from shape
-        if shape.geometryType() == "MultiPolygon":
+        if shape.geom_type == "MultiPolygon":
             outlines = [polygon.boundary.coords for polygon in shape]
-        elif shape.geometryType() == "Polygon":
+        elif shape.geom_type == "Polygon":
             outlines = [shape.boundary.coords]
-        elif shape.geometryType() == "MultiLineString":
+        elif shape.geom_type == "MultiLineString":
             outlines = [line.coords for line in shape]
-        elif shape.geometryType() == "LineString":
+        elif shape.geom_type == "LineString":
             outlines = [shape.coords]
         else:
-            raise NotImplementedError("Can't generate 3D object from " + shape.geometryType())
-        if shape.geometryType() in ["MultiLineString", "LineString"]:
+            raise NotImplementedError("Can't generate 3D object from " + shape.geom_type)
+        if shape.geom_type in ["MultiLineString", "LineString"]:
             if include_top_face or include_bottom_face:
-                warnings.warn("Ignoring 3D geometry top and bottom faces for geometry type "+shape.geometryType())
+                warnings.warn("Ignoring 3D geometry top and bottom faces for geometry type "+shape.geom_type)
                 include_bottom_face = include_top_face = False
         # calculate vertices and faces
         for outline in outlines:
@@ -136,7 +136,7 @@ def triangulate_polygon_constrained(shape, additional_opts=""):
     if not _POLYLABEL_IMPORTED:
         raise EnvironmentError("Constrained polygon triangulation requires shapely>=1.7.0")
     # Polygon case
-    if shape.geometryType() == "Polygon":
+    if shape.geom_type == "Polygon":
         tri = {"vertices": [], "segments": [], "holes": []}
         # add exterior edge
         ext_pt_cnt = len(shape.exterior.coords) - 1
@@ -159,10 +159,10 @@ def triangulate_polygon_constrained(shape, additional_opts=""):
         faces = [[i+1 for i in j] for j in t["triangles"]]  # switch from 0- to 1-indexing
         return vertices, faces
     # MultiPolygon/GeometryCollection case (recursive)
-    elif shape.geometryType() in ["MultiPolygon", "GeometryCollection"]:
+    elif shape.geom_type in ["MultiPolygon", "GeometryCollection"]:
         vertices, faces = [], []
         for part in shape:
-            if part.geometryType() == "Polygon":
+            if part.geom_type == "Polygon":
                 v, f = triangulate_polygon_constrained(part, additional_opts)
                 offset = len(vertices)
                 vertices += [list(i) for i in v]
@@ -170,7 +170,7 @@ def triangulate_polygon_constrained(shape, additional_opts=""):
         return vertices, faces
     # Unsupported geometry case
     else:
-        raise NotImplementedError("Can't do constrained triangulation on geometry type " + shape.geometryType())
+        raise NotImplementedError("Can't do constrained triangulation on geometry type " + shape.geom_type)
 
 
 def generate_obj_text_from_objects(objects, material_mapping=None, offset=(0, 0, 0)):
