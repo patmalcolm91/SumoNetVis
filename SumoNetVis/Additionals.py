@@ -102,7 +102,7 @@ class _Poly:
         if self.fill is True:
             if "lw" not in kwargs and "linewidth" not in kwargs:
                 kwargs["lw"] = 0
-            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, True, **kwargs)
+            poly = matplotlib.patches.Polygon(self.shape.boundary.coords, closed=True, **kwargs)
             poly.sumo_object = self
             ax.add_patch(poly)
             return poly
@@ -299,7 +299,7 @@ class _BusStop:
         if outline is not None:
             area_color = BUS_STOP_AREA_COLOR.get(BUS_STOP_STYLE, "#00000000")
             area_kwargs = {"color": area_color, **area_kwargs}
-            poly = matplotlib.patches.Polygon(outline.boundary.coords, True, **area_kwargs)
+            poly = matplotlib.patches.Polygon(outline.boundary.coords, closed=True, **area_kwargs)
             poly.sumo_object = self
             ax.add_patch(poly)
             artists.append(poly)
