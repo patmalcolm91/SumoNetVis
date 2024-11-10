@@ -336,15 +336,22 @@ class LineDataUnits(Line2D):
             ppd = 72./self.axes.figure.dpi
             trans = self.axes.transData.transform
             dpu = (trans((1, 1)) - trans((0, 0)))[0]
-            return tuple([u*dpu*ppd for u in self._dashes_data])
+            return tuple([float(u*dpu*ppd) for u in self._dashes_data])
         else:
             return tuple((1, 0))
+
+    def _get_dashes_new(self):
+        return self._dashOffset, self._get_dashes()
 
     def _set_dashes(self, dashes):
         self._dashes_data = dashes
 
+    def _set_dashes_new(self, dashes):
+        self._set_dashes(dashes)
+
     _linewidth = property(_get_lw, _set_lw)
     _dashSeq = property(_get_dashes, _set_dashes)
+    _dash_pattern = property(_get_dashes_new, _set_dashes_new)
 
 
 def convert_sumo_color(sumo_color):
