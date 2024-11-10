@@ -524,9 +524,12 @@ class _Lane:
                     warnings.warn("Can't generate stopline geometry for lane " + self.id)
                     continue
                 try:
-                    end_left = end_cl.parallel_offset(self.width / 2, side="left")
-                    end_right = end_cl.parallel_offset(self.width / 2, side="right")
-                    stop_line = LineString([end_left.coords[-1], end_right.coords[0]])
+                    tangent_vec = np.array(end_cl.coords[-1]) - np.array(end_cl.coords[0])
+                    normal_vec = np.array([-tangent_vec[1], tangent_vec[0]])
+                    normal_vec = normal_vec / np.linalg.norm(normal_vec)
+                    end_left = np.array(end_cl.coords[-1]) + normal_vec*self.width/2
+                    end_right = np.array(end_cl.coords[-1]) - normal_vec*self.width/2
+                    stop_line = LineString([end_left, end_right])
                 except (NotImplementedError, IndexError, ValueError):
                     warnings.warn("Can't generate stopline geometry for lane " + self.id)
                 else:
