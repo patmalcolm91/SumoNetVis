@@ -409,11 +409,11 @@ class Trajectories:
                 traj.point_plot_kwargs["color"] = color
             angle = (360 - angle) % 360
             if traj not in self.graphics:
-                self.graphics[traj], = ax.plot(x, y, marker=(3, 0, angle), **traj.point_plot_kwargs)
+                self.graphics[traj], = ax.plot([x], [y], marker=(3, 0, angle), **traj.point_plot_kwargs)
                 self.graphics[traj].sumo_object = traj
             else:
-                self.graphics[traj].set_xdata(x)
-                self.graphics[traj].set_ydata(y)
+                self.graphics[traj].set_xdata([x])
+                self.graphics[traj].set_ydata([y])
                 self.graphics[traj].set_marker((3, 0, angle))
                 if animate_color:
                     self.graphics[traj].set_color(traj.point_plot_kwargs["color"])
